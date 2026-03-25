@@ -103,3 +103,25 @@ Mọi lỗi từ Server đều trả về cấu trúc thống nhất này để 
   }
 }
 ```
+
+---
+## 4. 🟣 Data Type Formatting
+
+Quy ước kiểu dữ liệu sử dụng trong toàn bộ API nhằm đảm bảo tính nhất quán giữa Backend và Frontend, đồng thời tối ưu hiệu năng hiển thị.
+
+| Field        | Type    | Format                  | Description |
+|-------------|--------|------------------------|------------|
+| id          | string | UUID v4                | Mã định danh duy nhất |
+| source_ip   | string | IPv4 / IPv6            | IP nguồn |
+| dest_ip     | string | IPv4 / IPv6            | IP đích |
+| attack_type | string | Text                   | Loại tấn công |
+| severity    | string | Enum                   | High / Medium / Low |
+| lat         | number | Float                  | Vĩ độ |
+| lng         | number | Float                  | Kinh độ |
+| timestamp   | string | ISO 8601               | Thời gian |
+| success     | boolean| true / false           | Trạng thái API |
+| limit       | integer| Number                 | Số lượng record |
+| total       | integer| Number                 | Tổng số record |
+
+> ⚡ **Performance Note:**  
+> Các trường tọa độ (`lat`, `lng`) phải luôn là **number** để Frontend (Leaflet/Mapbox) render trực tiếp, tránh phải parse từ string → giúp xử lý tốt khi hệ thống có High Event Rate.
