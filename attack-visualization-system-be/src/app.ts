@@ -61,7 +61,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 /**
  * ---------------------------------------------------------
- * 3. PUBLIC ROUTES (No Auth/AppCheck required)
+ * 3. PUBLIC ROUTES (No need for protection)
  * ---------------------------------------------------------
  */
 
@@ -77,10 +77,23 @@ app.get("/", async (req: Request, res: Response) => {
  */
 
 app.use(
-    "/api",
+    "/api/v1",
     globalLimiter,
     router
 );
+
+/** This is the place where updated version codes run */
+// app.use(
+//     "/api/v2",
+//     globalLimiter,
+//     router
+// );
+
+// app.use(
+//     "/api/v3",
+//     globalLimiter,
+//     router
+// );
 
 /**
  * ---------------------------------------------------------
