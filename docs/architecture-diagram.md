@@ -90,6 +90,7 @@ Client → API Gateway → Backend Service → Database
 | ip          | VARCHAR(45) | Địa chỉ IP (IPv4/IPv6) |
 | location_id | INT (FK)    | Liên kết location      |
 
+---
 
 ###  Bảng `attacks`
 
@@ -99,8 +100,39 @@ Client → API Gateway → Backend Service → Database
 | ip        | VARCHAR(45) (FK) | IP nguồn tấn công |
 | timestamp | TIMESTAMP        | Thời gian xảy ra  |
 
+---
 
-## 📌 3.2 Chuẩn hóa (3NF)
+###  Bảng `attack_types`
+
+| Field       | Data Type    | Description         |
+|------------|-------------|---------------------|
+| id         | SERIAL (PK) | ID loại attack      |
+| name       | VARCHAR(50) | Tên loại            |
+| description| TEXT        | Mô tả               |
+
+---
+
+###  Bảng `targets`
+
+| Field | Data Type    | Description        |
+|------|-------------|--------------------|
+| id   | SERIAL (PK) | ID target          |
+| name | VARCHAR(100)| Tên hệ thống       |
+| ip   | VARCHAR(45) | IP mục tiêu        |
+
+---
+
+###  Bảng `attack_logs`
+
+| Field      | Data Type    | Description        |
+|-----------|-------------|--------------------|
+| id        | SERIAL (PK) | ID log             |
+| attack_id | INT (FK)    | Liên kết attack    |
+| status    | VARCHAR(50) | Trạng thái         |
+| payload   | TEXT        | Nội dung log       |
+| created_at| TIMESTAMP   | Thời gian log      |
+
+##  3.2 Chuẩn hóa (3NF)
 
 Thiết kế đạt chuẩn **Third Normal Form (3NF)** vì:
 
@@ -116,6 +148,37 @@ Quan hệ:
 
 ```plaintext
 attacks → ip_addresses → locations
+attacks → attack_types
+attacks → targets
+attacks → attack_logs
+```
+---
+
+## 3.3 Indexing Strategy
+
+Để đảm bảo hiệu năng khi hệ thống xử lý lượng lớn dữ liệu, các chiến lược indexing được áp dụng:
+
+### Primary & Foreign Keys
+
+- Primary Keys:
+  - attacks.id
+  - locations.id
+  - attack_types.id
+  - targets.id
+
+- Foreign Keys:
+  - attacks.ip → ip_addresses.ip
+  - ip_addresses.location_id → locations.id
+  - attack_logs.attack_id → attacks.id
+
+---
+
+### Single-column Indexes
+
+```sql
+CREATE INDEX idx_attacks_ip ON attacks(ip);
+CREATE INDEX idx_attacks_timestamp ON attacks(timestamp);
+CREATE INDEX idx_ip_location ON ip_addresses(location_id);
 ```
 
 ---
