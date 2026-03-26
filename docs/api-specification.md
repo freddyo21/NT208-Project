@@ -28,6 +28,7 @@ Luồng dữ liệu chính để đẩy log tấn công lên Bản đồ (Dashbo
   "timestamp": "2026-03-21T14:15:22Z"
 }
 ```
+* **Validation**: Dữ liệu đẩy lên Dashboard phải có đầy đủ tọa độ (lat, lng) đã qua xử lý Geo-IP.
 
 ---
 
@@ -44,13 +45,29 @@ Luồng dữ liệu chính để đẩy log tấn công lên Bản đồ (Dashbo
   "message": "Attack log ingested successfully"
 }
 ```
+* **Validation Rules**: 
+  * `source_ip`: Phải là IPv4 hợp lệ.
+  * `timestamp`: Phải đúng chuẩn ISO 8601.
+  * `location`: Không được rỗng (Null).
+* **Response (400 Bad Request):** Trả về nếu dữ liệu sai định dạng (Data type mismatch).
+```JSON
+{
+  "success": false,
+  "error": {
+    "code": "BAD_REQUEST", // Có thể sử dụng HTTP Status Code thay cho chữ để dễ nhận biết
+    "message": "Data type mismatch"
+  }
+}
+```
 
 ### 2.2. Lấy Lịch Sử Tấn Công (Cho tính năng xem lại trên Dashboard)
-* **Endpoint:** `GET /attacks/history`
+* **Endpoint:** `GET /attacks/history?limit=&severity=`
 * **Query Parameters:**
-  * `limit` (int): Số lượng record trả về (Mặc định: 50)
-  * `severity` (string): Lọc theo mức độ (`High`, `Medium`, `Low`)
-* **Response (200 OK):**
+  * `page` (`number`): Offset của trang (Mặc định: 0)
+  * `limit` (`number`): Số lượng record trả về mỗi trang (Mặc định: 10)
+  * `type` (`string?`): Loại tấn công (Mặc định: null)
+  * `severity` (`string?`): Lọc theo mức độ (`Critical`, `High`, `Medium`, `Low`) (Mặc định: null)
+* **Response (200 OK):** `GET /attacks/history?page=0&limit=50&severity=Critical`
 ```JSON
 {
   "success": true,
@@ -59,11 +76,21 @@ Luồng dữ liệu chính để đẩy log tấn công lên Bản đồ (Dashbo
       "id": "...",
       "source_ip": "...",
       "attack_type": "DDoS",
-      "timestamp": "..."
-    }
-  ],
+      "timestamp": "...",
+      "severity": "Critical"
+    },
+    {
+      "id": "...",
+      "source_ip": "...",
+      "attack_type": "Broken Access Control",
+      "timestamp": "...",
+      "severity": "Critical"
+    },
+    ...
+  ], // Chỉ trả về 50 bản ghi đầu tiên vì offset trang là 0
   "pagination": {
     "total": 1500,
+    "page": 0,
     "limit": 50
   }
 }
@@ -75,16 +102,17 @@ Luồng dữ liệu chính để đẩy log tấn công lên Bản đồ (Dashbo
   * `type` (string): Loại thống kê cần lấy. Các giá trị hợp lệ:
     * `summary`: Lấy số tổng quan (Total, Top 1).
     * `timeline`: Lấy dữ liệu theo giờ để vẽ Chart.js.
-  * `range` (string): Thời gian quét (VD: `1h`, `24h`, `7d`).
-* **Ví dụ Request:** `GET /stats?type=summary&range=24h`
+    * `geomap`: Trả về danh sách các quốc gia/tọa độ kèm số lượng tấn công (count) để vẽ Heatmap hoặc tô màu bản đồ.
+  * `range` (number): Thời gian quét (tính theo giây) (VD: `3600`, `86400`, `608000`...).
+* **Ví dụ Request:** `GET /stats?type=summary&range=86400`
 * **Response (200 OK):**
 ```JSON
 {
   "success": true,
   "data": {
     "total_attacks_today": 5204,
-    "top_attack_type": "Brute-force",
-    "top_source_ip": "192.168.1.100"
+    "top_attack_type": "Brute-force", // Loại tấn công nhiều nhất trong khoảng `range`
+    "top_source_ip": "192.168.1.100" // Địa chỉ tạo ra nhiều tấn công nhất
   }
 }
 ```
@@ -92,7 +120,7 @@ Luồng dữ liệu chính để đẩy log tấn công lên Bản đồ (Dashbo
 ---
 
 ## 3. 🔴 Chuẩn Error Response
-Mọi lỗi từ Server đều trả về cấu trúc thống nhất này để Frontend dễ bắt lỗi.
+Mọi lỗi từ Server đều trả về cấu trúc thống nhất này để Frontend dễ bắt lỗi. Mọi phản hồi lỗi phải đi kèm mã lỗi định danh:
 * **Response (400 / 500):**
 ```JSON
 {
@@ -109,19 +137,83 @@ Mọi lỗi từ Server đều trả về cấu trúc thống nhất này để 
 
 Quy ước kiểu dữ liệu sử dụng trong toàn bộ API nhằm đảm bảo tính nhất quán giữa Backend và Frontend, đồng thời tối ưu hiệu năng hiển thị.
 
-| Field        | Type    | Format                  | Description |
-|-------------|--------|------------------------|------------|
-| id          | string | UUID v4                | Mã định danh duy nhất |
-| source_ip   | string | IPv4 / IPv6            | IP nguồn |
-| dest_ip     | string | IPv4 / IPv6            | IP đích |
-| attack_type | string | Text                   | Loại tấn công |
-| severity    | string | Enum                   | High / Medium / Low |
-| lat         | number | Float                  | Vĩ độ |
-| lng         | number | Float                  | Kinh độ |
-| timestamp   | string | ISO 8601               | Thời gian |
-| success     | boolean| true / false           | Trạng thái API |
-| limit       | integer| Number                 | Số lượng record |
-| total       | integer| Number                 | Tổng số record |
+<table style="width: 100%;">
+  <thead>
+    <tr style="background-color: #2165fe;">
+      <th style="border: 1px solid #dddddd; padding: 8px;">Field</th>
+      <th style="border: 1px solid #dddddd; padding: 8px;">Type</th>
+      <th style="border: 1px solid #dddddd; padding: 8px;">Format</th>
+      <th style="border: 1px solid #dddddd; padding: 8px;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">id</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">UUID v4</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Mã định danh duy nhất</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">source_ip</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">IPv4 / IPv6</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">IP nguồn</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">dest_ip</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">IPv4 / IPv6</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">IP đích</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">attack_type</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Enum</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Loại tấn công</td>
+    </tr>
+    <tr">
+      <td style="border: 1px solid #dddddd; padding: 8px;">severity</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td colspan="2" style="border: 1px solid #dddddd; padding: 8px; text-align: center;">Enum ["Low", "Medium", "High", "Critical"]</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">lat</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Number</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Float (6 decimal places)</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Vĩ độ</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">lng</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Number</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Float (6 decimal places)</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Kinh độ</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">timestamp</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">string</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">ISO 8601 (UTC)</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Thời gian</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">success</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">boolean</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">true / false</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Trạng thái API</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">limit</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Number</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Int</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Số lượng record</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;">total</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Number</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Int</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Tổng số record</td>
+    </tr>
+  </tbody>
+</table>
 
 > ⚡ **Performance Note:**  
 > Các trường tọa độ (`lat`, `lng`) phải luôn là **number** để Frontend (Leaflet/Mapbox) render trực tiếp, tránh phải parse từ string → giúp xử lý tốt khi hệ thống có High Event Rate.
