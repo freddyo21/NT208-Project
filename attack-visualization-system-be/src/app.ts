@@ -3,19 +3,28 @@ dotenv.config();
 
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
+import compression from "compression";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handlers";
-import { router } from "./routes/router";
+import { router } from "./routes";
 import { globalLimiter } from "./middlewares/rate-limiter";
+import helmet from "helmet";
+import { socketInitialize } from "./websocket/websocket";
+import { createServer } from "http";
 
 const app = express();
+
+const httpServer = createServer(app);
+socketInitialize(httpServer);
+
 app.set("trust proxy", 1);
+app.use(helmet());
 
 /**
  * ---------------------------------------------------------
  * 1. CORS & PARSER
  * ---------------------------------------------------------
  */
-const allowedOrigins = (process.env.FRONTEND_CORS_ALLOWED || "")
+const allowedOrigins = (process.env.FRONTEND_CORS_ALLOWED_ORIGINS || "")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
@@ -42,12 +51,12 @@ const corsOptions: cors.CorsOptions = {
 };
 
 // Ensure CORS headers (especially credentials) are set for preflight requests
-app.options("*", cors(corsOptions));
-
+app.options(/(.*)/, cors(corsOptions));
 app.use(cors(corsOptions));
+app.use(compression());
 
 app.use(express.json({ limit: "50kb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "50kb" }));
 
 /**
  * ---------------------------------------------------------
@@ -107,4 +116,8 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
-export default app;
+const PORT = process.env.PORT || 3000;
+
+httpServer.listen(PORT, () => {
+    console.log("Attack Visualization System is running on port " + PORT);
+});
