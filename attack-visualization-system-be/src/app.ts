@@ -45,7 +45,7 @@ const corsOptions: cors.CorsOptions = {
         "Accept",
         "Authorization",
     ],
-    // credentials: true, // Remove if not using cookies
+    credentials: true, // Remove if not using cookies
     preflightContinue: false,
     optionsSuccessStatus: 200,
 };

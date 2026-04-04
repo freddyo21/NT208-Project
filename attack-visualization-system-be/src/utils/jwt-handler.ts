@@ -1,5 +1,5 @@
 import jwt, { JsonWebTokenError } from 'jsonwebtoken';
-import { Logger } from '../utils/Logger';
+import { Logger } from './Logger';
 import { User } from '../entities/User';
 import { JwtInvalidException } from '../exceptions/JwtInvalidException';
 
@@ -15,7 +15,7 @@ const getSecretKey = (): string => {
     return key;
 }
 
-export const generateToken = (user: User, expireTime: number = 3600) => {
+export const generateToken = (user: User, expiresIn: number = 3600) => {
     const issuedAt = Number(new Date());
 
     const payload = {
@@ -29,8 +29,8 @@ export const generateToken = (user: User, expireTime: number = 3600) => {
         payload,
         getSecretKey(),
         {
-            algorithm: "ES256",
-            expiresIn: "1h"
+            algorithm: "HS256",
+            expiresIn
         }
     );
 }
@@ -40,7 +40,7 @@ export const validateToken = (token: string) => {
         const secret = getSecretKey();
 
         const decoded = jwt.verify(token, secret, {
-            algorithms: ["ES256", "ES384", "ES512"],
+            algorithms: ["HS256", "HS384", "HS512"],
             clockTolerance: 30
         })
 

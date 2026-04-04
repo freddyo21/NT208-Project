@@ -1,6 +1,6 @@
 import { Request } from "express";
 import { JwtInvalidException } from "../exceptions/JwtInvalidException";
-import * as JwtHandler from "./jwt-handler";
+import * as JwtHandler from "../utils/jwt-handler";
 
 export const jwtVerify = (token: string) => {
     if (!token) throw new JwtInvalidException("Missing authorization token");
