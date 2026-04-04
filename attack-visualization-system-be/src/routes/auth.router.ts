@@ -1,12 +1,8 @@
 import { Router } from "express";
+import { AuthController } from "../controllers/auth.controller";
 
-const authRouter = Router();
+const router = Router();
 
-authRouter.post("/login", (req, res) => {
-    res.send({
-        message: "Login endpoint hit!",
-        timestamp: new Date().toISOString()
-    });
-});
+router.post("/login", AuthController.login);
 
-export { authRouter };
+export { router as authRouter };
