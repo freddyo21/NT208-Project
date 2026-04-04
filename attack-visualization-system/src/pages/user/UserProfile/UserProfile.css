@@ -1,0 +1,16 @@
+.rank-base,
+.rank-crown,
+.rank-sr1,
+.rank-sr2,
+.rank-sr3,
+.rank-plate {
+    position: absolute;
+    top: -20px;
+    /* max-height: 40vh; */
+}
+
+.user-profile__avatar {
+    position: absolute;
+    /* max-height: 40vh; */
+    height: 124px;
+}
