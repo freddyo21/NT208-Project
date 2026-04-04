@@ -10,6 +10,7 @@ import { globalLimiter } from "./middlewares/rate-limiter";
 import helmet from "helmet";
 import { socketInitialize } from "./websocket/websocket";
 import { createServer } from "http";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -54,6 +55,7 @@ const corsOptions: cors.CorsOptions = {
 app.options(/(.*)/, cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(compression());
+app.use(cookieParser());
 
 app.use(express.json({ limit: "50kb" }));
 app.use(express.urlencoded({ extended: true, limit: "50kb" }));
