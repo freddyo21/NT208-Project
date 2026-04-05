@@ -16,8 +16,14 @@ export class Logger {
     }
 
     private buildContent(level: LogLevel, message: string, args: unknown[], now: Date): string {
-        const timestamp = now.toISOString().replace("T", " ").split(".")[0];
-        return `[${timestamp}] [${level}] ${message}${args.length ? ` ${JSON.stringify(args)}` : ""}\n`;
+        const logObject = {
+            timestamp: now.toISOString(),
+            level,
+            message,
+            context: args,
+            fileType: this._fileType
+        };
+        return JSON.stringify(logObject) + "\n";
     }
 
     public get fileType(): string {
@@ -43,8 +49,11 @@ export class Logger {
             await this.ensureLogDir();
             const content = this.buildContent(level, message, args, now);
             await fs.promises.appendFile(logPath, content, "utf8");
-        } catch {
-            process.stderr.write(`Critical: Failed to write log to ${path.basename(logPath)}\n`);
+        } catch (error: unknown) {
+            const reason = error instanceof Error ? error.message : String(error);
+            process.stderr.write(
+                `Critical: Failed to write log to ${path.basename(logPath)} - ${reason}\n`
+            );
         }
     }
 
