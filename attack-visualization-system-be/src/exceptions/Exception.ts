@@ -8,12 +8,13 @@
  */
 
 export class Exception extends Error {
-    public statusCode: number;
-    public details: any;
-    public isOperational: boolean;
+    protected readonly statusCode: number;
+    protected details: any;
+    protected readonly isOperational: boolean;
 
     constructor(message: string, statusCode = 500, details: any = null) {
         super(message);
+        this.name = "Exception";
         this.statusCode = statusCode;
         this.details = details;
         this.isOperational = true; // Distinguishes from programming errors
