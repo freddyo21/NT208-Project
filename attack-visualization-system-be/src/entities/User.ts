@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import { PasswordUtils } from "../utils/security.utility";
 
 export type UserRole = "admin" | "operator";
 
@@ -36,18 +36,6 @@ export class User {
         }
     }
 
-    private static validatePasswordStrength(password: string) {
-        const minLength = 12; // Chuẩn an toàn hiện nay thường là >= 12
-        const hasUpperCase = /[A-Z]/.test(password);
-        const hasLowerCase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-        if (password.length < minLength || !hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-            throw new Error("Mật khẩu không đủ độ mạnh theo chính sách an toàn.");
-        }
-    }
-
     public get id(): string {
         return this._id;
     }
@@ -73,8 +61,8 @@ export class User {
      */
     public static async create(data: Omit<UserProperties, "password_hash"> & { password: string }): Promise<User> {
         // Có thể thêm bước validate độ mạnh password ở đây
-        this.validatePasswordStrength(data.password);
-        const passwordHash = await this.hashPassword(data.password, 13);
+        PasswordUtils.validateStrength(data.password);
+        const passwordHash = await PasswordUtils.hash(data.password, 13);
 
         const { password, ...rest } = data;
 
@@ -84,40 +72,19 @@ export class User {
         });
     }
 
-    public static async hashPassword(password: string, saltRounds: number = 10): Promise<string> {
-        return await bcrypt.hash(password, saltRounds);
-    }
-
-    public async validatePassword(password: string): Promise<boolean> {
-        try {
-            return await bcrypt.compare(password, this._passwordHash);
-        } catch (error) {
-            // Log error tại đây nếu cần thiết cho mục đích Audit
-            throw new Error("Invalid username or password");
-        }
-    }
-
     public async changePassword(oldPassword: string, newPassword: string): Promise<void> {
-        const isValid = await this.validatePassword(oldPassword);
+        const isValid = await PasswordUtils.compare(oldPassword, this._passwordHash);
+
         if (!isValid) {
             throw new Error("Invalid current password");
         }
 
-        User.validatePasswordStrength(newPassword);
+        PasswordUtils.validateStrength(newPassword);
 
         if (oldPassword === newPassword) {
             throw new Error("New password must be different from the old one");
         }
 
-        this._passwordHash = await User.hashPassword(newPassword, 13);
-    }
-
-    public toJSON() {
-        return {
-            id: this.id,
-            username: this.username,
-            role: this.role,
-            createdAt: this.createdAt
-        };
+        this._passwordHash = await PasswordUtils.hash(newPassword, 13);
     }
 }
