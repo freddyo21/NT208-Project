@@ -42,35 +42,41 @@ export const validateToken = (token: string) => {
         const decoded = jwt.verify(token, secret, {
             algorithms: ["HS256", "HS384", "HS512"],
             clockTolerance: 30
-        })
+        }) as any;
 
         const isRequiredClaimsExist = decoded.sub;
 
         if (!isRequiredClaimsExist) {
             // If the token is valid but missing required claims, consider it invalid
-            throw new JwtInvalidException("Token is missing required claims.");
+            throw new JwtInvalidException("Token is missing required claims (sub).");
         }
 
         return decoded;
-    } catch (ex: unknown) {
-        logger.fileType = "jwt";
+    } catch (ex: any) {
+        let message = "Token validation failed";
+        let reason = "Unknown JWT error";
 
         if (ex instanceof jwt.TokenExpiredError) {
-            console.error(`Expired JWT token`);
-            logger.error(`Expired JWT token`);
+            message = "Token has expired";
+            reason = "TokenExpiredError";
         } else if (ex instanceof jwt.JsonWebTokenError) {
-            console.error(`Invalid JWT token`);
-            logger.error(`Invalid JWT token`);
+            message = "Token is invalid or has been tampered with";
+            reason = "JsonWebTokenError";
         } else if (ex instanceof jwt.NotBeforeError) {
-            console.error(`JWT not active`);
-            logger.error(`JWT not active`);
-        } else {
-            console.error(`JWT error`);
-            logger.error(`JWT error: ${ex}`);
+            message = "Token is not yet valid (not active)";
+            reason = "NotBeforeError";
         }
+
+        logger.error(`[JWT_FAILED] ${reason}: ${ex.message || message}`, {
+            // Log 10 ký tự đầu/cuối là đủ trace
+            tokenSnippet: `${token.substring(0, 10)}...${token.slice(-10)}`,
+            originalError: ex.name,
+            // stack: reason === "Unknown JWT error" && ex.stack ? ex.stack : undefined
+            stack: ex.stack
+        });
 
         // Convert all JWT-related errors to JwtInvalidException
         // This error will be caught by the Global Error Handler and returned as 401
-        throw new JwtInvalidException("Token validation failed: ");
+        throw new JwtInvalidException(`Token validation failed: ${message}`, 401, { reason });
     }
 }
