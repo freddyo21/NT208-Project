@@ -7,9 +7,10 @@ const logger = new Logger("jwt");
 
 const getSecretKey = (): string => {
     const key = process.env.JWT_SECRET_KEY;
+    const hasKey = key && key.trim().length > 0;
 
-    if (!key) {
-        throw new Error("JWT_SECRET_KEY is missing or empty in environment configuration.")
+    if (!hasKey) {
+        throw new JwtInvalidException("Secret key is missing or empty in environment configuration.")
     }
 
     return key;
