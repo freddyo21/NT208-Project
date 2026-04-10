@@ -26,9 +26,9 @@ const routesConfig = [
     {
         path: "admin",
         element: (
-            // <RoleCheckMiddleware minRole={RoleLevels.ADMIN}>
-            <AdminLayout />
-            // </RoleCheckMiddleware>
+            <RoleCheckMiddleware minRole={ERoleLevels.ADMIN}>
+                <AdminLayout />
+            </RoleCheckMiddleware>
         ),
         children: [
             { path: "*", element: <AdminRoutes /> },
