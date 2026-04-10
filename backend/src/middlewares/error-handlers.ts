@@ -1,49 +1,72 @@
 import { Request, Response, NextFunction } from "express";
-import { Exception } from "../exceptions";
+import { Exception, NotFoundException } from "../exceptions";
+import { Logger } from "../utils/Logger";
+import { IErrorResponse } from "@attack-visualization-system/shared";
+
+const systemLogger = new Logger("system");
+const authLogger = new Logger("auth");
 
 /**
  * Global error handler - must be registered after all routes
  */
-
 export function errorHandler(
     err: any,
     req: Request,
-    res: Response,
+    res: Response<IErrorResponse, Record<string, any>>,
     next: NextFunction
 ) {
     // Default to 500 if no status code
     const statusCode = err.statusCode || 500;
-    err.status = err.status || "error";
+    const isOperational = err.isOperational || false;
+    const isProduction = process.env.NODE_ENV === "production";
 
-    console.error("[ERROR] :", {
-        method: req.method,
-        path: req.originalUrl,
-        message: err.message,
-        stack: err.stack,
-    });
-
-    if (process.env.NODE_ENV !== "production") {
-        res.status(statusCode).json({
-            status: err.status,
-            error: err,
+    if (statusCode >= 500 || !isOperational) {
+        // Lỗi hệ thống hoặc lỗi chưa được xử lý (Unknown Error)
+        systemLogger.error(`[CRITICAL] ${req.method} ${req.originalUrl}`, {
             message: err.message,
-            ...(err.details && { details: err.details }),
-            stack: err.stack
+            stack: err.stack,
+            ip: req.ip
+        });
+    } else if (statusCode === 401 || statusCode === 403) {
+        // Lỗi an ninh (Unauthorized/Forbidden) -> Log để theo dõi dấu hiệu tấn công
+        authLogger.error(`[AUTH_ALERT] ${req.ip} tried to access ${req.originalUrl}`, {
+            reason: err.message,
+            user: req.body?.username || "anonymous"
         });
     } else {
-        if (err.isOperational) {
-            res.status(statusCode).json({
-                status: err.status,
+        systemLogger.debug(`[CLIENT_ERR] ${statusCode} - ${err.message}`);
+    }
+
+    // Build response based on environment and error type
+    let response: IErrorResponse;
+
+    if (!isProduction || isOperational) {
+        // Development: full details + stack
+        response = {
+            status: statusCode >= 500 ? "error" : "fail",
+            error: {
+                name: err instanceof Exception ? err.name : "InternalServerException",
                 message: err.message,
                 ...(err.details && { details: err.details }),
-            });
-        } else {
-            res.status(500).json({
-                status: "error",
-                message: "Internal server error"
-            });
-        }
+                path: req.path,
+                timestamp: new Date().toISOString(),
+                ...(isProduction && { stack: err.stack }) // Hide stack in production for operational errors
+            }
+        };
+    } else {
+        // Unknown error -> generic response
+        response = {
+            status: "error",
+            error: {
+                name: "InternalServerException",
+                message: "Internal server error",
+                path: req.path,
+                timestamp: new Date().toISOString()
+            }
+        };
     }
+
+    res.status(statusCode).json(response);
 }
 
 /**
@@ -66,5 +89,5 @@ export function notFoundHandler(
     res: Response,
     next: NextFunction
 ) {
-    next(new Exception(`Route not found: ${req.method} ${req.path}`, 404));
+    next(new NotFoundException(`Route not found: ${req.method} ${req.path}`));
 }

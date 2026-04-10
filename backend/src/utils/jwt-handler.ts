@@ -16,7 +16,7 @@ const getSecretKey = (): string => {
     return key;
 };
 
-export const generateToken = (user: UserResponse, expireTime: number = 3600) => {
+export const generateToken = (user: UserResponse, expiresIn: number = 3600) => {
     const issuedAt = Number(new Date());
 
     const payload = {
@@ -31,7 +31,7 @@ export const generateToken = (user: UserResponse, expireTime: number = 3600) => 
         getSecretKey(),
         {
             algorithm: "HS512" as const,
-            expiresIn: expireTime
+            expiresIn
         }
     );
 };
