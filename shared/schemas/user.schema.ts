@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { snakeToCamelTransform } from "../utils";
+import { ERoles } from "../types";
+
+export const UserRoleSchema = z.object({
+    id: z.number().int().nonnegative(),
+    name: z.enum(ERoles).default(ERoles.OPERATOR),
+})
 
 export const BaseUserSchema = z.object({
     id: z.uuidv7(),
@@ -12,7 +18,7 @@ export const BaseUserSchema = z.object({
         .min(1, { message: "Email cannot be empty" })
         .max(100, { message: "Email cannot exceed 100 characters" }),
     password_hash: z.string().min(8), // Trường nhạy cảm
-    role: z.enum(["admin", "operator"]).default("operator"),
+    role: UserRoleSchema,
     status: z.enum(["active", "inactive", "banned"]).default("active"),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
