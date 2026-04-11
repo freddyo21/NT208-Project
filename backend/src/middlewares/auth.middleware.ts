@@ -27,8 +27,12 @@ export const authMiddleware = (req: JwtRequest, _res: Response, next: NextFuncti
         return next(new JwtInvalidException("Missing authorization token"));
     }
 
-    const payload = validateToken(token);
-    req.user = payload;
+    try {
+        const payload = validateToken(token);
+        req.user = payload;
+    } catch (error) {
+        return next(error);
+    }
 
     return next();
 };

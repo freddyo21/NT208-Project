@@ -3,7 +3,7 @@ import { validateLoginRequest, validateRegisterRequest } from "../utils/function
 import * as authService from "../services/auth.service.js";
 import { LoginResponseDTO, UserResponse } from "@attack-visualization-system/shared";
 
-const EXPIRY_LONG = 2592000; // 30 Ngày (3600 * 24 * 30)
+const EXPIRY_LONG = 2592000; // 30 days (3600 * 24 * 30)
 export const login = async (req: Request, res: Response<LoginResponseDTO>, next: NextFunction) => {
   try {
     const { ...loginData } = req.body;

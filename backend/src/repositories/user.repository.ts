@@ -43,10 +43,10 @@ export const update = async (id: number, data: Partial<User>) => {
         "name": "name",
         "email": "email",
         "password_hash": "password_hash"
-        // Tuyệt đối không đưa "id" vào đây để tránh bị ghi đè
+        // Never include "id" here to avoid overwriting
     };
 
-    // Duyệt qua các key trong data để build query động
+    // Iterate through keys in data to build dynamic query
     for (const [key, value] of Object.entries(data)) {
         const columnName = columnMap[key];
 

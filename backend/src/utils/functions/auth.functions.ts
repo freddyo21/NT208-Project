@@ -12,7 +12,7 @@ export const validateLoginRequest = (data: Record<string, unknown>): LoginReques
     logger.error("Login request validation failed", {
       input: {
         ...data,
-        password: data.password && typeof data.password === "string" ? "*".repeat(String(data.password).length) : undefined
+        password: typeof data.password === "string" ? "*".repeat(data.password.length) : undefined
       },
       error: z.treeifyError(result.error)
     });
@@ -30,7 +30,7 @@ export const validateRegisterRequest = (data: Record<string, unknown>): CreateUs
     logger.error("Register request validation failed", {
       input: {
         ...data,
-        password: data.password && typeof data.password === "string" ? "*".repeat(String(data.password).length) : undefined
+        password: typeof data.password === "string" ? "*".repeat(data.password.length) : undefined
       },
       error: z.treeifyError(result.error)
     });
