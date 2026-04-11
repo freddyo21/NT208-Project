@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { snakeToCamelTransform } from "../utils";
 
-export const UserSchema = z.object({
+export const BaseUserSchema = z.object({
     id: z.uuidv7(),
     name: z.string()
         .min(2, { message: "Name cannot be empty" })
@@ -19,10 +19,12 @@ export const UserSchema = z.object({
     last_login: z.iso.datetime().nullable()
 }).strict();
 
-// Tạo một Schema mới loại bỏ passwordHash để trả về client
-export const UserResponseSchema = UserSchema.omit({ password_hash: true }).transform(snakeToCamelTransform);
+export const UserSchema = BaseUserSchema.transform(snakeToCamelTransform);
 
-export const CreateUserRequestSchema = UserSchema.omit({
+// Tạo một Schema mới loại bỏ passwordHash để trả về client
+export const UserResponseSchema = BaseUserSchema.omit({ password_hash: true }).transform(snakeToCamelTransform);
+
+export const CreateUserRequestSchema = BaseUserSchema.omit({
     id: true,
     password_hash: true,
     created_at: true,
@@ -32,7 +34,7 @@ export const CreateUserRequestSchema = UserSchema.omit({
     password: z.string().min(8), // Client gửi pass thô, không phải hash
 }).strict();
 
-export const UpdateUserRequestSchema = UserSchema.pick({
+export const UpdateUserRequestSchema = BaseUserSchema.pick({
     name: true,
     status: true
 }).partial().strict();

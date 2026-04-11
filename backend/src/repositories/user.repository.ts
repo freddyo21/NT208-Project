@@ -1,4 +1,4 @@
-import { User } from "@attack-visualization-system/shared";
+import { IUser } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
 
 export const findByEmail = async (email: string) => {
@@ -8,7 +8,7 @@ export const findByEmail = async (email: string) => {
         WHERE email = $1
         LIMIT 1
     `;
-    const result = await pool.query<User>(query, [email]);
+    const result = await pool.query<IUser>(query, [email]);
 
     return result.rows[0] ?? null;
 };
@@ -22,19 +22,19 @@ export const create = async (data: CreateUserData) => {
         throw new Error("Missing required fields: name, email, or password_hash");
     }
 
-    const result = await pool.query<User>(
+    const result = await pool.query<IUser>(
         `
         INSERT INTO users (name, email, password_hash)
         VALUES ($1, $2, $3)
         RETURNING *
         `,
-        [name, email, password_hash]
+        [name, email, passwordHash]
     );
 
     return result.rows[0];
 };
 
-export const update = async (id: number, data: Partial<User>) => {
+export const update = async (id: number, data: Partial<IUser>) => {
     const fields: string[] = [];
     const values: any[] = [];
     let placeholderIndex = 1;
@@ -67,6 +67,6 @@ export const update = async (id: number, data: Partial<User>) => {
         RETURNING *
     `;
 
-    const result = await pool.query<User>(query, values);
+    const result = await pool.query<IUser>(query, values);
     return result.rows[0] ?? null;
 };
