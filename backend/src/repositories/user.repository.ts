@@ -1,5 +1,16 @@
-import { IUser } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
+
+type UserRow = {
+    id: string;
+    name: string;
+    email: string;
+    password_hash: string;
+    role: "admin" | "operator";
+    status: "active" | "inactive" | "banned";
+    created_at: string;
+    updated_at: string;
+    last_login: string | null;
+};
 
 export const findByEmail = async (email: string) => {
     const query = `
@@ -8,12 +19,12 @@ export const findByEmail = async (email: string) => {
         WHERE email = $1
         LIMIT 1
     `;
-    const result = await pool.query<IUser>(query, [email]);
+    const result = await pool.query<UserRow>(query, [email]);
 
     return result.rows[0] ?? null;
 };
 
-type CreateUserData = Pick<User, "name" | "email" | "password_hash">;
+type CreateUserData = Pick<UserRow, "name" | "email" | "password_hash">;
 
 export const create = async (data: CreateUserData) => {
     const { name, email, password_hash } = data;
@@ -22,19 +33,19 @@ export const create = async (data: CreateUserData) => {
         throw new Error("Missing required fields: name, email, or password_hash");
     }
 
-    const result = await pool.query<IUser>(
+    const result = await pool.query<UserRow>(
         `
         INSERT INTO users (name, email, password_hash)
         VALUES ($1, $2, $3)
         RETURNING *
         `,
-        [name, email, passwordHash]
+        [name, email, password_hash]
     );
 
     return result.rows[0];
 };
 
-export const update = async (id: number, data: Partial<IUser>) => {
+export const update = async (id: number, data: Partial<UserRow>) => {
     const fields: string[] = [];
     const values: any[] = [];
     let placeholderIndex = 1;
@@ -67,6 +78,6 @@ export const update = async (id: number, data: Partial<IUser>) => {
         RETURNING *
     `;
 
-    const result = await pool.query<IUser>(query, values);
+    const result = await pool.query<UserRow>(query, values);
     return result.rows[0] ?? null;
 };

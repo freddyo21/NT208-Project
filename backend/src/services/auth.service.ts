@@ -23,9 +23,9 @@ export const login = async (data: LoginRequestDTO) => {
     }
 
     const safeUser = UserResponseSchema.parse(userRow);
-    const token = generateToken(safeUser);
+    const accessToken = generateToken(safeUser);
 
-    return { user: safeUser, token };
+    return { user: safeUser, accessToken };
   } catch (error) {
     if (error instanceof InvalidCredentialException) {
       throw error;

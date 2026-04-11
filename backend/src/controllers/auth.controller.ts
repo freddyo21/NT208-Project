@@ -10,11 +10,11 @@ export const login = async (req: Request, res: Response<LoginResponseDTO>, next:
 
     const cleanData = validateLoginRequest(loginData);
 
-    const { user, token } = await authService.login(cleanData);
+    const { user, accessToken } = await authService.login(cleanData);
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    res.cookie("token", token, {
+    res.cookie("token", accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
@@ -23,7 +23,8 @@ export const login = async (req: Request, res: Response<LoginResponseDTO>, next:
     });
 
     return res.status(200).json({
-      user
+      user,
+      accessToken
     });
   } catch (err) {
     next(err);
