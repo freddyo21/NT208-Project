@@ -98,7 +98,7 @@ Cập nhật bản đồ, timeline, thống kê realtime
 
 ---
 
-## 3. Database Design (3NF)
+## 3. Database Design 
 
 ### 3.1 ERD Diagram
 
