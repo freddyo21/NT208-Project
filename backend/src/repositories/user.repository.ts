@@ -13,11 +13,13 @@ export const findByEmail = async (email: string) => {
     return result.rows[0] ?? null;
 };
 
-export const create = async (data: Required<Pick<User, "name" | "email" | "passwordHash">>) => {
-    const { name, email, passwordHash: password_hash } = data;
+type CreateUserData = Pick<User, "name" | "email" | "password_hash">;
+
+export const create = async (data: CreateUserData) => {
+    const { name, email, password_hash } = data;
 
     if (!name || !email || !password_hash) {
-        throw new Error("Missing required fields: name, email, or passwordHash");
+        throw new Error("Missing required fields: name, email, or password_hash");
     }
 
     const result = await pool.query<User>(
@@ -40,7 +42,7 @@ export const update = async (id: number, data: Partial<User>) => {
     const columnMap: Record<string, string> = {
         "name": "name",
         "email": "email",
-        "passwordHash": "password_hash"
+        "password_hash": "password_hash"
         // Tuyệt đối không đưa "id" vào đây để tránh bị ghi đè
     };
 
