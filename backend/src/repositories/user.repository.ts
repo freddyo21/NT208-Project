@@ -1,4 +1,4 @@
-import { User } from "@attack-visualization-system/shared";
+import { IBaseUser, IUser } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
 
 export const findByEmail = async (email: string) => {
@@ -8,31 +8,33 @@ export const findByEmail = async (email: string) => {
         WHERE email = $1
         LIMIT 1
     `;
-    const result = await pool.query<User>(query, [email]);
+    const result = await pool.query<IBaseUser>(query, [email]);
 
     return result.rows[0] ?? null;
 };
 
-export const create = async (data: Required<Pick<User, "name" | "email" | "passwordHash">>) => {
-    const { name, email, passwordHash: password_hash } = data;
+type CreateUserData = Pick<IUser, "name" | "email" | "passwordHash">;
 
-    if (!name || !email || !password_hash) {
+export const create = async (data: CreateUserData) => {
+    const { name, email, passwordHash } = data;
+
+    if (!name || !email || !passwordHash) {
         throw new Error("Missing required fields: name, email, or passwordHash");
     }
 
-    const result = await pool.query<User>(
+    const result = await pool.query<IUser>(
         `
         INSERT INTO users (name, email, password_hash)
         VALUES ($1, $2, $3)
         RETURNING *
         `,
-        [name, email, password_hash]
+        [name, email, passwordHash]
     );
 
     return result.rows[0];
 };
 
-export const update = async (id: number, data: Partial<User>) => {
+export const update = async (id: string, data: Partial<IUser>) => {
     const fields: string[] = [];
     const values: any[] = [];
     let placeholderIndex = 1;
@@ -41,10 +43,10 @@ export const update = async (id: number, data: Partial<User>) => {
         "name": "name",
         "email": "email",
         "passwordHash": "password_hash"
-        // Tuyệt đối không đưa "id" vào đây để tránh bị ghi đè
+        // Never include "id" here to avoid overwriting
     };
 
-    // Duyệt qua các key trong data để build query động
+    // Iterate through keys in data to build dynamic query
     for (const [key, value] of Object.entries(data)) {
         const columnName = columnMap[key];
 
@@ -65,6 +67,6 @@ export const update = async (id: number, data: Partial<User>) => {
         RETURNING *
     `;
 
-    const result = await pool.query<User>(query, values);
+    const result = await pool.query<IUser>(query, values);
     return result.rows[0] ?? null;
 };

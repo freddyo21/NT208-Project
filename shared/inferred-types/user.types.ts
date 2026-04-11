@@ -1,13 +1,23 @@
 import { z } from "zod";
-import { ChangePasswordRequestSchema, CreateUserRequestSchema, UserResponseSchema, UserSchema } from "../schemas/user.schema";
+import * as UserSchemas from "../schemas/user.schema";
 
-export type User = z.infer<typeof UserSchema>;
+export type BaseUser = z.infer<typeof UserSchemas.BaseUserSchema>;
+
+export type User = z.infer<typeof UserSchemas.UserSchema>;
 
 // Type cho dữ liệu trả về client
-export type UserResponse = z.infer<typeof UserResponseSchema>;
+export type UserResponse = z.infer<typeof UserSchemas.UserResponseSchema>;
 
-export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
+export type CreateUserRequest = z.infer<typeof UserSchemas.CreateUserRequestSchema>;
 
-export type UpdateUserRequest = Partial<Pick<User, "name" | "role" | "status">>;
+export type UpdateUserRequest = Partial<Pick<IUser, "name" | "role" | "status">>;
 
-export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
+export type ChangePasswordRequest = z.infer<typeof UserSchemas.ChangePasswordRequestSchema>;
+
+// Backward-compatible aliases
+export interface IBaseUser extends BaseUser { };
+export interface IUser extends User { };
+export interface IUserResponse extends UserResponse { };
+export interface ICreateUserRequest extends CreateUserRequest { };
+export interface IUpdateUserRequest extends UpdateUserRequest { };
+export interface IChangePasswordRequest extends ChangePasswordRequest { };

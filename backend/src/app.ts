@@ -8,7 +8,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/error-handlers";
 import { router } from "./routes";
 import { globalLimiter } from "./middlewares/rate-limiter";
 import helmet from "helmet";
-import { socketInitialize } from "./websocket/websocket";
+import { socketInitialize } from "./websocket";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 
