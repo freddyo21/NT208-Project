@@ -1,16 +1,5 @@
+import { IBaseUser, IUser } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
-
-type UserRow = {
-    id: string;
-    name: string;
-    email: string;
-    password_hash: string;
-    role: "admin" | "operator";
-    status: "active" | "inactive" | "banned";
-    created_at: string;
-    updated_at: string;
-    last_login: string | null;
-};
 
 export const findByEmail = async (email: string) => {
     const query = `
@@ -19,33 +8,33 @@ export const findByEmail = async (email: string) => {
         WHERE email = $1
         LIMIT 1
     `;
-    const result = await pool.query<UserRow>(query, [email]);
+    const result = await pool.query<IBaseUser>(query, [email]);
 
     return result.rows[0] ?? null;
 };
 
-type CreateUserData = Pick<UserRow, "name" | "email" | "password_hash">;
+type CreateUserData = Pick<IUser, "name" | "email" | "passwordHash">;
 
 export const create = async (data: CreateUserData) => {
-    const { name, email, password_hash } = data;
+    const { name, email, passwordHash } = data;
 
-    if (!name || !email || !password_hash) {
-        throw new Error("Missing required fields: name, email, or password_hash");
+    if (!name || !email || !passwordHash) {
+        throw new Error("Missing required fields: name, email, or passwordHash");
     }
 
-    const result = await pool.query<UserRow>(
+    const result = await pool.query<IUser>(
         `
         INSERT INTO users (name, email, password_hash)
         VALUES ($1, $2, $3)
         RETURNING *
         `,
-        [name, email, password_hash]
+        [name, email, passwordHash]
     );
 
     return result.rows[0];
 };
 
-export const update = async (id: number, data: Partial<UserRow>) => {
+export const update = async (id: string, data: Partial<IUser>) => {
     const fields: string[] = [];
     const values: any[] = [];
     let placeholderIndex = 1;
@@ -53,7 +42,7 @@ export const update = async (id: number, data: Partial<UserRow>) => {
     const columnMap: Record<string, string> = {
         "name": "name",
         "email": "email",
-        "password_hash": "password_hash"
+        "passwordHash": "password_hash"
         // Never include "id" here to avoid overwriting
     };
 
@@ -78,6 +67,6 @@ export const update = async (id: number, data: Partial<UserRow>) => {
         RETURNING *
     `;
 
-    const result = await pool.query<UserRow>(query, values);
+    const result = await pool.query<IUser>(query, values);
     return result.rows[0] ?? null;
 };

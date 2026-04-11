@@ -23,6 +23,5 @@ export const LoginRequestSchema = z.object({
 }).strict().transform(snakeToCamelTransform);
 
 export const LoginResponseSchema = z.object({
-    user: UserResponseSchema,
-    accessToken: z.string().min(1)
+    user: UserResponseSchema
 }).strict();
