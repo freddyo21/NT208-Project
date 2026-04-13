@@ -33,6 +33,8 @@ export const UserResponseSchema = BaseUserSchema.omit({ password_hash: true }).t
 export const CreateUserRequestSchema = BaseUserSchema.omit({
     id: true,
     password_hash: true,
+    role: true,
+    status: true,
     created_at: true,
     updated_at: true,
     last_login: true
@@ -40,21 +42,31 @@ export const CreateUserRequestSchema = BaseUserSchema.omit({
     password: z.string().min(8), // Client gửi pass thô, không phải hash
 }).strict();
 
+export const CreateUserResponseSchema = z.object({
+    message: z.string(),
+    user: UserResponseSchema
+}).strict();
+
 export const UpdateUserRequestSchema = BaseUserSchema.pick({
-    name: true,
-    status: true
+    name: true
 }).partial().strict();
 
+export const UpdateUserResponseSchema = z.object({
+    message: z.string(),
+    user: UserResponseSchema
+}).strict();
+
 export const ChangePasswordRequestSchema = z.object({
-    old_password: z.string().min(1), // Không cần min(8) ở đây, cứ có là được để check
+    old_password: z.string().min(1, { message: "Old password cannot be empty" }), // Không cần min(8) ở đây, cứ có là được để check
     new_password: z.string()
-        .min(8, "New password must be at least 8 characters")
-        .max(50, "Password too long"),
+        .min(8, { message: "New password must be at least 8 characters" })
+        .max(50, { message: "Password too long" }),
     confirm_password: z.string()
-}).strict().refine((data) => data.new_password === data.confirm_password, {
-    message: "Passwords don't match",
-    path: ["confirm_password"], // Báo lỗi đúng vào field confirm
-}).refine((data) => data.old_password !== data.new_password, {
-    message: "New password must be different from the old one",
-    path: ["new_password"],
-}).transform(snakeToCamelTransform);
+}).strict()
+    .refine((data) => data.new_password === data.confirm_password, {
+        message: "Passwords don't match",
+        path: ["confirm_password"], // Báo lỗi đúng vào field confirm
+    }).refine((data) => data.old_password !== data.new_password, {
+        message: "New password must be different from the old one",
+        path: ["new_password"],
+    }).transform(snakeToCamelTransform);
