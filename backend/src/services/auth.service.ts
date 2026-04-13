@@ -1,9 +1,8 @@
-import bcrypt from "bcrypt";
 import { generateToken } from "../utils/jwt-handler";
-import { ConflictException, InvalidCredentialException } from "../exceptions";
+import { InvalidCredentialException } from "../exceptions";
 import * as userRepository from "../repositories/user.repository";
-import { CreateUserRequest, LoginRequestDTO, UserResponseSchema } from "@attack-visualization-system/shared";
-import { hashPassword } from "../utils/hash";
+import { LoginRequestDTO, UserResponseSchema } from "@attack-visualization-system/shared";
+import { comparePassword } from "../utils/hash";
 
 export const login = async (data: LoginRequestDTO) => {
   try {
@@ -17,7 +16,7 @@ export const login = async (data: LoginRequestDTO) => {
       throw new InvalidCredentialException("Invalid email or password");
     }
 
-    const isMatch = await bcrypt.compare(password, userRow.password_hash);
+    const isMatch = await comparePassword(password, userRow.password_hash);
     if (!isMatch) {
       throw new InvalidCredentialException("Invalid email or password");
     }
@@ -33,23 +32,4 @@ export const login = async (data: LoginRequestDTO) => {
 
     throw new Error("Authentication service failed");
   }
-};
-
-export const register = async (data: CreateUserRequest) => {
-  const normalizedEmail = data.email.trim().toLowerCase();
-  const existedUser = await userRepository.findByEmail(normalizedEmail);
-
-  if (existedUser) {
-    throw new ConflictException("Email already exists");
-  }
-
-  const hashedPassword = await hashPassword(data.password);
-
-  const createdUser = await userRepository.create({
-    name: data.name,
-    email: normalizedEmail,
-    password_hash: hashedPassword
-  });
-
-  return UserResponseSchema.parse(createdUser);
 };
