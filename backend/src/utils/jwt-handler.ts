@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Logger } from "../utils/Logger";
 import { JwtInvalidException } from "../exceptions";
-import { UserResponse } from "@attack-visualization-system/shared";
+import { UserResponse, ITokenPayload } from "@attack-visualization-system/shared";
 
 const logger = new Logger("jwt");
 
@@ -17,13 +17,18 @@ const getSecretKey = (): string => {
 };
 
 export const generateToken = (user: UserResponse, expiresIn: number = 3600) => {
-    const issuedAt = Number(new Date());
+    const issuedAt = Number(Math.floor(Date.now() / 1000));
 
-    const payload = {
+    const payload: ITokenPayload = {
         iss: process.env.JWT_ISSUER,    // Issuer of the token
         sub: user.id,                   // Subject of the token
         aud: process.env.JWT_ISSUER,    // Audience of the token
-        iat: issuedAt
+        iat: issuedAt,
+        exp: issuedAt + expiresIn,
+        id: user.id,
+        email: user.email,
+        role: user.role.name,
+        status: user.status
     };
 
     return jwt.sign(
@@ -41,9 +46,9 @@ export const validateToken = (token: string) => {
         const secret = getSecretKey();
 
         const decoded = jwt.verify(token, secret, {
-            algorithms: ["HS256", "HS384", "HS512"],
+            algorithms: ["HS512"],
             clockTolerance: 30
-        });
+        }) as ITokenPayload;
 
         const isRequiredClaimsExist = decoded.sub;
 
