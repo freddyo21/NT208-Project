@@ -1,10 +1,4 @@
-import("dotenv").then((dotenv) => {
-    if (process.env.NODE_ENV !== "production") {
-        dotenv.config()
-    }
-}).then(() => {
-    initializeApp();
-});;
+import "dotenv/config";
 
 import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
@@ -27,11 +21,16 @@ async function initializeApp() {
     const httpServer = createServer(app);
     await socketInitialize(httpServer);
 
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT;
     httpServer.listen(PORT, () => {
         console.log(`Attack Visualization System is running on port ${PORT}`);
     });
 }
+
+initializeApp().catch(err => {
+    console.error("Failed to start app:", err);
+    process.exit(1);
+});
 
 function setupMiddleware(app: Application) {
     app.set("trust proxy", 1);
@@ -65,7 +64,7 @@ function setupMiddleware(app: Application) {
         ],
         credentials: true, // Remove if not using cookies
         preflightContinue: false,
-        optionsSuccessStatus: 200,
+        optionsSuccessStatus: 204,
     };
 
     // Ensure CORS headers (especially credentials) are set for preflight requests

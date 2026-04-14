@@ -8,7 +8,7 @@ const HttpClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // withCredentials: true, // Phải xóa nếu không dùng cookie
+  withCredentials: true, // Phải xóa nếu không dùng cookie
 });
 
 HttpClient.interceptors.request.use(
