@@ -2,30 +2,17 @@ import jwt from "jsonwebtoken";
 import { Logger } from "../utils/Logger";
 import { JwtInvalidException } from "../exceptions";
 import { UserResponse, ITokenPayload } from "@attack-visualization-system/shared";
+import { getKeys } from "./key-generator";
 
 const logger = new Logger("jwt");
 
-const getSecretKey = (): string => {
-    const key = process.env.JWT_SECRET_KEY;
-    const hasKey = key && key.trim().length > 0;
-
-    if (!hasKey) {
-        throw new JwtInvalidException("Secret key is missing or empty in environment configuration.");
-    }
-
-    return key;
-};
-
 export const generateToken = (user: UserResponse, expiresIn: number = 3600) => {
-    const issuedAt = Number(Math.floor(Date.now() / 1000));
+    const { privateKey } = getKeys();
 
     const payload: ITokenPayload = {
         iss: process.env.JWT_ISSUER,    // Issuer of the token
         sub: user.id,                   // Subject of the token
         aud: process.env.JWT_ISSUER,    // Audience of the token
-        iat: issuedAt,
-        exp: issuedAt + expiresIn,
-        id: user.id,
         email: user.email,
         role: user.role.name,
         status: user.status
@@ -33,20 +20,21 @@ export const generateToken = (user: UserResponse, expiresIn: number = 3600) => {
 
     return jwt.sign(
         payload,
-        getSecretKey(),
+        privateKey,
         {
-            algorithm: "HS512" as const,
-            expiresIn
+            algorithm: "ES256",
+            issuer: process.env.JWT_ISSUER,
+            expiresIn,
         }
     );
 };
 
 export const validateToken = (token: string) => {
     try {
-        const secret = getSecretKey();
+        const { publicKey } = getKeys();
 
-        const decoded = jwt.verify(token, secret, {
-            algorithms: ["HS512"],
+        const decoded = jwt.verify(token, publicKey, {
+            algorithms: ["ES256"],
             clockTolerance: 30
         }) as ITokenPayload;
 
