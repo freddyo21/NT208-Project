@@ -1,15 +1,13 @@
-import { CreateUserRequest, UserResponseSchema } from "@attack-visualization-system/shared";
+import { CreateUserRequest, CreateUserRequestSchema, UserResponseSchema } from "@attack-visualization-system/shared";
 import * as userRepository from "../repositories/user.repository";
 import { hashPassword } from "../utils/hash";
 import { ConflictException } from "../exceptions";
 
 const SALT_ROUNDS = 13; // Vừa đủ để đảm bảo an toàn mà không quá chậm cho trải nghiệm người dùng. Có thể điều chỉnh nếu cần thiết.
 export const create = async (data: CreateUserRequest) => {
-    const { name, email, password } = data;
+    const { name, email, password } = await CreateUserRequestSchema.parseAsync(data);
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const existedUser = await userRepository.findByEmail(normalizedEmail);
+    const existedUser = await userRepository.findByEmail(email);
 
     if (existedUser) {
         throw new ConflictException("User already exists");
@@ -19,7 +17,7 @@ export const create = async (data: CreateUserRequest) => {
 
     const createdUser = await userRepository.create({
         name,
-        email: normalizedEmail,
+        email,
         passwordHash: hashedPassword
     });
 

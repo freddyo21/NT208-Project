@@ -30,11 +30,6 @@ export const socketInitialize = async (httpServer: HttpServer) => {
         try {
             const user = jwtVerify(token);
 
-            // Check token expiry
-            if (user.exp && Date.now() / 1000 > user.exp) {
-                return next(new JwtInvalidException("TOKEN_EXPIRED"));
-            }
-
             // Validate user ID exists
             if (!user?.id) {
                 return next(new JwtInvalidException("INVALID_USER_ID"));

@@ -8,13 +8,10 @@ type JwtRequest = Request & {
 };
 
 const extractToken = (req: Request): string | null => {
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-        return authHeader.slice(7).trim();
-    }
+    const token = req.cookies?.token;
 
-    if (req.cookies?.token && typeof req.cookies.token === "string") {
-        return req.cookies.token;
+    if (token && typeof token === "string") {
+        return token;
     }
 
     return null;
