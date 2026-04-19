@@ -4,8 +4,8 @@ import * as userRepository from "../repositories/user.repository";
 import { LoginRequestDTO, LoginRequestSchema, UserResponseSchema } from "@attack-visualization-system/shared";
 import { comparePassword } from "../utils/hash";
 
-const EXPIRY_SHORT = 3600;
-const EXPIRY_LONG = 2592000; // 30 Days (3600 * 24 * 30)
+const EXPIRY_SHORT = "1h";
+const EXPIRY_LONG = "30d";
 
 export const login = async (data: LoginRequestDTO) => {
   try {

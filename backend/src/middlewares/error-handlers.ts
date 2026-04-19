@@ -40,20 +40,7 @@ export function errorHandler(
     // Build response based on environment and error type
     let response: IErrorResponse;
 
-    if (!isProduction || isOperational) {
-        // Development: full details + stack
-        response = {
-            status: statusCode >= 500 ? "error" : "fail",
-            error: {
-                name: err instanceof Exception ? err.name : "InternalServerException",
-                message: err.message,
-                ...(err.details && { details: err.details }),
-                path: req.path,
-                timestamp: new Date().toISOString(),
-                ...(isProduction && { stack: err.stack }) // Hide stack in production for operational errors
-            }
-        };
-    } else {
+    if (isProduction && !isOperational) {
         // Unknown error -> generic response
         response = {
             status: "error",
@@ -62,6 +49,20 @@ export function errorHandler(
                 message: "Internal server error",
                 path: req.path,
                 timestamp: new Date().toISOString()
+            }
+        };
+    } else {
+        // Development: full details + stack
+        // Production: operational errors with limited details
+        response = {
+            status: statusCode >= 500 ? "error" : "fail",
+            error: {
+                name: err.name || "Exception",
+                message: err.message,
+                ...(err.details && { details: err.details }),
+                path: req.path,
+                timestamp: new Date().toISOString(),
+                ...(!isProduction && { stack: err.stack }) // Hide stack in production for operational errors
             }
         };
     }

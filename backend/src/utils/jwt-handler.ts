@@ -3,10 +3,11 @@ import { Logger } from "../utils/Logger";
 import { JwtInvalidException } from "../exceptions";
 import { UserResponse, ITokenPayload } from "@attack-visualization-system/shared";
 import { getKeys } from "./key-generator";
+import ms from "ms";
 
 const logger = new Logger("jwt");
 
-export const generateToken = (user: UserResponse, expiresIn: number = 3600) => {
+export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1h") => {
     const { privateKey } = getKeys();
 
     const payload: ITokenPayload = {

@@ -66,7 +66,8 @@ export const createSocketRateLimiter = ({
                 }
 
                 const identity = keyGenerator(socket, packet);
-                const key = `${eventName}:${identity}`;
+                const ruleKey = rules[eventName] ? eventName : "*";
+                const key = `${ruleKey}:${identity}`;
                 const now = Date.now();
 
                 const bucket = buckets.get(key);

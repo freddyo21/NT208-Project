@@ -77,7 +77,7 @@ export class Logger {
         }
 
         const logObject = {
-            timestamp: new Date().toISOString(), // Đảm bảo dùng biến đúng
+            timestamp: now.toISOString() || new Date().toISOString(),
             level,
             message,
             ip,
