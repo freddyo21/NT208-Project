@@ -1,27 +1,461 @@
-@keyframes shake {
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
-    10%,
-    90% {
-        transform: translateX(-1px);
+.lg-root {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #060c06;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.lg-matrix {
+    position: fixed;
+    inset: 0;
+    opacity: 0.1;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.lg-scanline {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 255, 65, .012) 2px, rgba(0, 255, 65, .012) 4px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.lg-topbar {
+    position: relative;
+    z-index: 10;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 0;
+    background: rgba(0, 0, 0, .7);
+    border-bottom: 1px solid rgba(0, 255, 65, .15);
+    font-size: 11px;
+}
+
+.lg-brand {
+    color: #00ff41;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(0, 255, 65, .5);
+}
+
+.lg-ver {
+    color: #00cc33;
+    letter-spacing: 1px;
+}
+
+.lg-sep {
+    color: #004d11;
+    padding: 0 2px;
+}
+
+.lg-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #00ff41;
+}
+
+.lg-clock {
+    color: #00ff41;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.lg-spacer {
+    flex: 1;
+}
+
+.lg-restricted {
+    font-size: 9px;
+    color: #ff3333;
+    letter-spacing: 2px;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1
     }
 
-    20%,
-    80% {
-        transform: translateX(2px);
-    }
-
-    30%,
-    50%,
-    70% {
-        transform: translateX(-4px);
-    }
-
-    40%,
-    60% {
-        transform: translateX(4px);
+    50% {
+        opacity: .4
     }
 }
 
-.shake {
-    animation: shake 0.4s;
+.lg-led {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ff41;
+    box-shadow: 0 0 6px #00ff41;
+    animation: pulse 1.6s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: .2
+    }
+}
+
+.lg-center {
+    position: relative;
+    z-index: 5;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.lg-card {
+    width: 420px;
+    max-width: 100%;
+    background: rgba(3, 10, 3, .93);
+    border: 1px solid rgba(0, 255, 65, .3);
+    border-radius: 3px;
+    box-shadow: 0 0 40px rgba(0, 255, 65, .07), inset 0 0 30px rgba(0, 255, 65, .02);
+    animation: fadeUp .5s ease both;
+    overflow: hidden;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+.lg-chrome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(0, 255, 65, .04);
+    border-bottom: 1px solid rgba(0, 255, 65, .1);
+}
+
+.lg-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.lg-dot--r {
+    background: #ff3b30;
+}
+
+.lg-dot--y {
+    background: #ffcc00;
+}
+
+.lg-dot--g {
+    background: #00ff41;
+}
+
+.lg-chrome-title {
+    font-size: 9px;
+    color: #004d11;
+    letter-spacing: 2px;
+    flex: 1;
+    text-align: center;
+}
+
+.lg-body {
+    padding: 28px 32px 24px;
+}
+
+.lg-header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.lg-logo {
+    font-family: 'VT323', monospace;
+    font-size: 42px;
+    color: #00ff41;
+    letter-spacing: 6px;
+    line-height: 1;
+    text-shadow: 0 0 18px rgba(0, 255, 65, .4);
+}
+
+.lg-dim {
+    color: #006617;
+    font-size: 36px;
+}
+
+.lg-subtitle {
+    font-size: 8px;
+    color: #006617;
+    letter-spacing: 3px;
+    margin-top: 4px;
+}
+
+.lg-tagline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 9px;
+    color: #00cc33;
+    letter-spacing: 2px;
+    border: 1px solid rgba(0, 255, 65, .18);
+    border-radius: 2px;
+    padding: 3px 10px;
+    background: rgba(0, 255, 65, .04);
+}
+
+.lg-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.lg-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(0, 255, 65, .15);
+}
+
+.lg-div-text {
+    font-size: 8px;
+    color: #004d11;
+    letter-spacing: 2px;
+    white-space: nowrap;
+}
+
+.lg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+}
+
+.lg-label {
+    font-size: 9px;
+    color: #006617;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.lg-prompt {
+    color: #00ff41;
+}
+
+.lg-input {
+    width: 100%;
+    background: rgba(0, 255, 65, .04);
+    border: 1px solid rgba(0, 255, 65, .2);
+    border-radius: 2px;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    caret-color: #00ff41;
+    transition: border-color .2s, background .2s;
+}
+
+.lg-input::placeholder {
+    color: #004d11;
+}
+
+.lg-input:focus {
+    border-color: rgba(0, 255, 65, .55);
+    background: rgba(0, 255, 65, .07);
+}
+
+.lg-input:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.lg-input--pw {
+    padding-right: 36px;
+}
+
+.lg-pw-wrap {
+    position: relative;
+}
+
+.lg-eye {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #006617;
+    font-size: 12px;
+    line-height: 1;
+    transition: color .15s;
+}
+
+.lg-eye:hover {
+    color: #00ff41;
+}
+
+.lg-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 14px;
+}
+
+.lg-cb {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.lg-cb-box {
+    display: inline-flex;
+    width: 13px;
+    height: 13px;
+    border: 1px solid rgba(0, 255, 65, .3);
+    border-radius: 2px;
+    background: rgba(0, 255, 65, .04);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+}
+
+.lg-cb:checked+.lg-cb-box {
+    background: rgba(0, 255, 65, .14);
+    border-color: #00ff41;
+}
+
+.lg-cb:checked+.lg-cb-box::after {
+    content: '✓';
+    font-size: 9px;
+    color: #00ff41;
+    line-height: 1;
+}
+
+.lg-cb-label {
+    font-size: 9px;
+    color: #006617;
+    letter-spacing: 1px;
+}
+
+.lg-error {
+    background: rgba(255, 51, 51, .07);
+    border: 1px solid rgba(255, 51, 51, .3);
+    border-radius: 2px;
+    padding: 7px 10px;
+    font-size: 11px;
+    color: #ff5555;
+    margin-bottom: 14px;
+    animation: errIn .2s ease;
+}
+
+@keyframes errIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+.lg-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(0, 255, 65, .07);
+    border: 1px solid rgba(0, 255, 65, .4);
+    border-radius: 2px;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    padding: 11px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s, box-shadow .2s, letter-spacing .2s;
+}
+
+.lg-btn:hover:not(:disabled) {
+    background: rgba(0, 255, 65, .13);
+    border-color: #00ff41;
+    box-shadow: 0 0 12px rgba(0, 255, 65, .18);
+    letter-spacing: 3px;
+}
+
+.lg-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.lg-btn--busy {
+    pointer-events: none;
+}
+
+.lg-arr {
+    color: #006617;
+}
+
+.lg-spin {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(0, 255, 65, .2);
+    border-top-color: #00ff41;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+.lg-footer {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 255, 65, .08);
+    text-align: center;
+    font-size: 8px;
+    color: #004d11;
+    letter-spacing: 2px;
 }

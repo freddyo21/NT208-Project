@@ -33,6 +33,7 @@ export default function LoginProvider({ children }: { children: ReactNode }) {
 
             setCurrentUser(null);
             setIsAuthenticated(false);
+            throw new Error(errorMessage);
         } finally {
             setLoading(false);
         }
