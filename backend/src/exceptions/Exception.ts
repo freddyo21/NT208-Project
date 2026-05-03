@@ -5,19 +5,30 @@
  * - Consistent error format for frontend consumption
  * - Differentiates between operational errors and programming errors
  * - Logs detailed errors server-side, sends safe messages to client
+ * @property {string} name - The name of the exception
+ * @property {number} statusCode - The HTTP status code of the exception
+ * @property {any} details - The details of the exception
+ * @property {boolean} isOperational - Whether the exception is operational or not
  */
 
 export class Exception extends Error {
     protected readonly statusCode: number;
-    protected details: any;
+    protected _details: any;
     protected readonly isOperational: boolean;
 
-    constructor(message: string, statusCode = 500, details: any = null) {
+    constructor(message: string, statusCode = 500, name = "Exception", details: any = null) {
         super(message);
-        this.name = "Exception";
+        this.name = name;
         this.statusCode = statusCode;
-        this.details = details;
-        this.isOperational = true; // Distinguishes from programming errors
-        Error.captureStackTrace(this, this.constructor);
+        this._details = details;
+        this.isOperational = true;
+
+        if ((Error as any).captureStackTrace) {
+            (Error as any).captureStackTrace(this, this.constructor);
+        }
+    }
+
+    public get details() {
+        return this._details;
     }
 }
