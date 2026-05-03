@@ -1,13 +1,7 @@
 import { z } from "zod";
-import { snakeToCamelTransform } from "../utils";
 import { ERoles } from "../types";
 
-export const UserRoleSchema = z.object({
-    id: z.number().int().nonnegative(),
-    name: z.enum(ERoles).default(ERoles.OPERATOR),
-})
-
-export const BaseUserSchema = z.object({
+export const UserSchema = z.object({
     id: z.uuidv7(),
     name: z.string()
         .min(2, { message: "Name cannot be empty" })
@@ -17,27 +11,30 @@ export const BaseUserSchema = z.object({
         .toLowerCase()
         .min(1, { message: "Email cannot be empty" })
         .max(100, { message: "Email cannot exceed 100 characters" }),
-    password_hash: z.string().min(8), // Trường nhạy cảm
-    role: UserRoleSchema,
-    status: z.enum(["active", "inactive", "banned"]).default("active"),
-    created_at: z.iso.datetime(),
-    updated_at: z.iso.datetime(),
-    last_login: z.iso.datetime().nullable()
+    passwordHash: z.string().min(8), // Trường nhạy cảm
+    elo: z.number()
+        .int()
+        .min(0)
+        .default(1200),
+    role: z.enum(ERoles).default(ERoles.OPERATOR),
+    status: z.enum(["active", "inactive", "pending", "banned"]).default("active"),
+    isVerified: z.boolean().default(false),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+    lastLogin: z.date().nullable()
 }).strict();
 
-export const UserSchema = BaseUserSchema.transform(snakeToCamelTransform);
-
 // Tạo một Schema mới loại bỏ passwordHash để trả về client
-export const UserResponseSchema = BaseUserSchema.omit({ password_hash: true }).transform(snakeToCamelTransform);
+export const UserResponseSchema = UserSchema.omit({ passwordHash: true });
 
-export const CreateUserRequestSchema = BaseUserSchema.omit({
+export const CreateUserRequestSchema = UserSchema.omit({
     id: true,
-    password_hash: true,
+    passwordHash: true,
     role: true,
     status: true,
-    created_at: true,
-    updated_at: true,
-    last_login: true
+    createdAt: true,
+    updatedAt: true,
+    lastLogin: true
 }).extend({
     password: z.string().min(8), // Client gửi pass thô, không phải hash
 }).strict();
@@ -47,7 +44,7 @@ export const CreateUserResponseSchema = z.object({
     user: UserResponseSchema
 }).strict();
 
-export const UpdateUserRequestSchema = BaseUserSchema.pick({
+export const UpdateUserRequestSchema = UserSchema.pick({
     name: true
 }).partial().strict();
 
@@ -69,4 +66,4 @@ export const ChangePasswordRequestSchema = z.object({
     }).refine((data) => data.old_password !== data.new_password, {
         message: "New password must be different from the old one",
         path: ["new_password"],
-    }).transform(snakeToCamelTransform);
+    });

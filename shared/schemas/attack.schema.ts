@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { EAttackTypes, EProtocols, ESeverityLevels } from "../types";
-import { decimal96, snakeToCamelTransform } from "../utils";
+import { decimal96 } from "../utils";
 
 /**
  * Schema for validating and transforming target attack data.
@@ -29,7 +29,7 @@ import { decimal96, snakeToCamelTransform } from "../utils";
  */
 export const TargetSchema = z.object({
     id: z.uuidv7(),
-    ip_address: z.ipv4().or(z.ipv6()),
+    ipAddress: z.ipv4().or(z.ipv6()),
     lat: z.coerce.number()
         .min(-90).max(90)
         .refine(decimal96, "Latitude must be DECIMAL(9,6)"),
@@ -37,17 +37,17 @@ export const TargetSchema = z.object({
         .min(-180).max(180)
         .refine(decimal96, "Longitude must be DECIMAL(9,6)"),
     description: z.string().optional(),
-}).strict().transform(snakeToCamelTransform);
+}).strict();
 
 export const AttackEventResponseSchema = z.object({
     id: z.uuidv7(),
     type: z.enum(EAttackTypes),
-    source_ip: z.ipv4().or(z.ipv6()),
+    sourceIp: z.ipv4().or(z.ipv6()),
     severity: z.enum(ESeverityLevels),
     timestamp: z.iso.datetime(), // ISO 8601 format
     payload: z.object({
         data: z.union([z.record(z.string(), z.any()), z.string()]),
-        content_type: z.string(),
+        contentType: z.string(),
         size: z.number().int().nonnegative(),
         headers: z.record(z.string(), z.string()).optional(),
     }).optional(),
@@ -61,9 +61,15 @@ export const AttackEventResponseSchema = z.object({
 }, {
     message: "ICMP payload size is suspicious!",
     path: ["payload", "size"]
-}).transform(snakeToCamelTransform);
+});
 
 export const AttackHistoryResponseSchema = z.object({
     events: z.array(AttackEventResponseSchema),
     total: z.number().int().nonnegative(),
+});
+
+export const AttackEventDTOSchema = AttackEventResponseSchema.omit({ id: true });
+
+export const AttackHistoryResponseDTOSchema = AttackHistoryResponseSchema.omit({ events: true }).extend({
+    events: z.array(AttackEventDTOSchema)
 });
