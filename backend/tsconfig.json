@@ -40,12 +40,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "@attack-visualization-system/shared": [
-        "../shared/src/index.ts"
-      ]
-    }
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*"
