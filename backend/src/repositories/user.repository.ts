@@ -1,26 +1,42 @@
-import { BaseUserSchema, CreateUserRequestSchema, IBaseUser, IUser, UserSchema } from "@attack-visualization-system/shared";
+import { CreateUserRequestSchema, IUser, UserResponseSchema, UserSchema } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
+import { Exception } from "../exceptions";
 
 const USER_SELECT_COLUMNS = `
-    id,
-    name,
-    email,
-    username,
-    password_hash AS "passwordHash",
-    elo,
-    role,
-    status,
-    is_verified AS "isVerified",
-    created_at AS "createdAt",
-    updated_at AS "updatedAt",
-    last_login AS "lastLogin"
+    u."id",
+    u."name",
+    u."email",
+    u."username",
+    u."password_hash" AS "passwordHash",
+    u."elo",
+    u."status",
+    u."is_verified" AS "isVerified",
+    u."created_at" AS "createdAt",
+    u."updated_at" AS "updatedAt",
+    u."last_login" AS "lastLogin"
 `;
+
+export const findById = async (id: string) => {
+    const query = `
+        SELECT ${USER_SELECT_COLUMNS}, r.name AS role
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = $1
+        LIMIT 1
+    `;
+    const result = await pool.query<IUser>(query, [id]);
+    const user = result.rows[0] ?? null;
+    if (!user) return null;
+
+    return UserSchema.parse(user);
+};
 
 export const findByEmail = async (email: string) => {
     const query = `
-        SELECT ${USER_SELECT_COLUMNS}
-        FROM users
-        WHERE email = $1
+        SELECT ${USER_SELECT_COLUMNS}, r.name AS role
+        FROM "users" u
+        JOIN "roles" r ON u.role_id = r.id
+        WHERE u.email = $1
         LIMIT 1
     `;
     const result = await pool.query<IUser>(query, [email]);
@@ -30,63 +46,99 @@ export const findByEmail = async (email: string) => {
     return UserSchema.parse(user);
 };
 
+// export const findByUsername = async (username: string) => {
+//     const query = `
+//         SELECT ${USER_SELECT_COLUMNS}, r.name AS role
+//         FROM "users" u
+//         JOIN "roles" r ON u.role_id = r.id
+//         WHERE u.username = $1
+//         LIMIT 1
+//     `;
+//     const result = await pool.query<IUser>(query, [username]);
+//     const user = result.rows[0] ?? null;
+//     if (!user) return null;
+
+//     return UserSchema.parse(user);
+// };
 
 type CreateUserData = Pick<IUser, "name" | "email" | "passwordHash">;
 export const create = async (data: Required<CreateUserData>) => {
     const { name, email, passwordHash } = data;
 
     if (!name || !email || !passwordHash) {
-        throw new Error("Missing required fields");
+        throw new Exception("Missing required fields", 400);
     }
 
-    const result = await pool.query<IUser>(
+    const user = await pool.query<IUser>(
         `
-        INSERT INTO users (name, email, password_hash)
-        VALUES ($1, $2, $3)
-        RETURNING ${USER_SELECT_COLUMNS}
+            WITH "inserted_user" AS (
+                INSERT INTO "users" ("name", "email", "password_hash")
+                VALUES ($1, $2, $3)
+                RETURNING *
+            )
+            SELECT 
+                iu."id",
+                iu."name",
+                iu."email",
+                iu."password_hash" AS "passwordHash",
+                iu."elo",
+                r."name" AS "role",
+                iu."status",
+                iu."is_verified" AS "isVerified",
+                iu."created_at" AS "createdAt",
+                iu."updated_at" AS "updatedAt",
+                iu."last_login" AS "lastLogin"
+            FROM "inserted_user" iu
+            JOIN "roles" r ON iu."role_id" = r."id"
+            LIMIT 1;
         `,
         [name, email, passwordHash]
-    );
+    ).then(result => result.rows[0] ?? null);
 
-    return UserSchema.parse(result.rows[0]);
-};
-
-export const update = async (id: string, data: Partial<IUser>) => {
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let placeholderIndex = 1;
-
-    const columnMap: Record<string, string> = {
-        "name": "name",
-        "email": "email",
-        "passwordHash": "password_hash"
-        // Never include "id" here to avoid overwriting
-    };
-
-    // Iterate through keys in data to build dynamic query
-    for (const [key, value] of Object.entries(data)) {
-        const columnName = columnMap[key];
-
-        // Chỉ xử lý nếu key nằm trong danh sách cho phép và value không undefined
-        if (columnName && value !== undefined) {
-            fields.push(`${columnName} = $${placeholderIndex++}`);
-            values.push(value);
-        }
+    if (user) {
+        const { passwordHash, ...userWithoutHash } = user;
+        return UserResponseSchema.parse(userWithoutHash);
     }
 
-    if (fields.length === 0) return null; // Không có gì để update
-
-    values.push(id); // Tham số cuối cùng cho WHERE id = $x
-    const query = `
-    UPDATE users
-    SET ${fields.join(", ")}
-    WHERE id = $${placeholderIndex}
-    RETURNING ${USER_SELECT_COLUMNS}
-    `;
-
-    const result = await pool.query<IUser>(query, values);
-    const user = result.rows[0] ?? null;
-    if (!user) return null;
-
-    return UserSchema.parse(user);
+    throw new Exception("Failed to create user", 500, "InternalServerError");
 };
+
+// export const update = async (id: string, data: Partial<IUser>) => {
+//     const fields: string[] = [];
+//     const values: unknown[] = [];
+//     let placeholderIndex = 1;
+
+//     const columnMap: Record<string, string> = {
+//         "name": "name",
+//         "email": "email",
+//         "passwordHash": "password_hash"
+//         // Never include "id" here to avoid overwriting
+//     };
+
+//     // Iterate through keys in data to build dynamic query
+//     for (const [key, value] of Object.entries(data)) {
+//         const columnName = columnMap[key];
+
+//         // Chỉ xử lý nếu key nằm trong danh sách cho phép và value không undefined
+//         if (columnName && value !== undefined) {
+//             fields.push(`${columnName} = $${placeholderIndex++}`);
+//             values.push(value);
+//         }
+//     }
+
+//     if (fields.length === 0) return null; // Không có gì để update
+
+//     values.push(id); // Tham số cuối cùng cho WHERE id = $x
+//     const query = `
+//         UPDATE "users"
+//         SET ${fields.join(", ")}
+//         WHERE "id" = $${placeholderIndex}
+//         RETURNING ${USER_SELECT_COLUMNS}, u."role_id" AS "roleId"
+//     `;
+
+//     const result = await pool.query<IUser>(query, values);
+//     const user = result.rows[0] ?? null;
+//     if (!user) return null;
+
+//     return UserResponseSchema.parse(user);
+// };
