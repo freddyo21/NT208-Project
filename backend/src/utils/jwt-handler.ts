@@ -7,6 +7,30 @@ import ms from "ms";
 
 const logger = new Logger("jwt");
 
+type RefreshTokenRecord = {
+    userId: string;
+    expiresAt: number;
+};
+
+const refreshTokenStore = new Map<string, RefreshTokenRecord>();
+
+// Cần bỏ sau khi đã có Redis để blacklist refresh token
+const cleanupExpiredRefreshTokens = () => {
+    const now = Date.now();
+    for (const [token, record] of refreshTokenStore.entries()) {
+        if (record.expiresAt <= now) {
+            refreshTokenStore.delete(token);
+        }
+    }
+};
+
+const generateRefreshTokenString = (): string => {
+    const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+    return Array.from(randomBytes)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+};
+
 export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1h") => {
     const { privateKey } = getKeys();
 
@@ -15,7 +39,7 @@ export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1
         sub: user.id,                   // Subject of the token
         aud: process.env.JWT_ISSUER,    // Audience of the token
         email: user.email,
-        role: user.role.name,
+        role: user.role,
         status: user.status
     };
 
@@ -28,6 +52,41 @@ export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1
             expiresIn,
         }
     );
+};
+
+export const generateRefreshToken = (userId: string, expiresIn: ms.StringValue = "7d") => {
+    cleanupExpiredRefreshTokens();
+
+    const refreshTokenString = generateRefreshTokenString();
+    const expiresAtMs = Date.now() + ms(expiresIn);
+
+    refreshTokenStore.set(refreshTokenString, {
+        userId,
+        expiresAt: expiresAtMs,
+    });
+
+    return refreshTokenString;
+};
+
+export const verifyRefreshToken = (refreshToken: string): { userId: string } | null => {
+    cleanupExpiredRefreshTokens();
+
+    const record = refreshTokenStore.get(refreshToken);
+
+    if (!record) {
+        return null;
+    }
+
+    if (record.expiresAt <= Date.now()) {
+        refreshTokenStore.delete(refreshToken);
+        return null;
+    }
+
+    return { userId: record.userId };
+};
+
+export const revokeRefreshToken = (refreshToken: string) => {
+    refreshTokenStore.delete(refreshToken);
 };
 
 export const validateToken = (token: string) => {
