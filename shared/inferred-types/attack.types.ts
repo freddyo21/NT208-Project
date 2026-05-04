@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { AttackEventResponseSchema, AttackHistoryResponseSchema, AttackStatsRequestSchema, TargetSchema } from "../schemas";
-import { SnakeToCamelObject } from "../utils";
+import { AttackEventDTOSchema, AttackEventResponseSchema, AttackHistoryResponseDTOSchema, AttackHistoryResponseSchema, AttackStatsRequestSchema, TargetSchema } from "../schemas";
 
 export type AttackStats = z.infer<typeof AttackStatsRequestSchema>;
 
@@ -8,10 +7,8 @@ export type Target = z.infer<typeof TargetSchema>;
 
 export type IAttackEvent = z.infer<typeof AttackEventResponseSchema>;
 
-export type AttackEventDTO = Omit<IAttackEvent, "id">
+export type AttackEventDTO = z.infer<typeof AttackEventDTOSchema>;
 
 export type AttackHistoryResponse = z.infer<typeof AttackHistoryResponseSchema>;
 
-export type AttackHistoryResponseDTO = Omit<AttackHistoryResponse, "events"> & {
-    events: Omit<IAttackEvent, "id">[];
-};
+export type AttackHistoryResponseDTO = z.infer<typeof AttackHistoryResponseDTOSchema>;

@@ -17,7 +17,7 @@ const extractToken = (req: Request): string | null => {
     return null;
 };
 
-export const authMiddleware = (req: JwtRequest, _res: Response, next: NextFunction) => {
+export const authMiddleware = (req: JwtRequest, res: Response, next: NextFunction) => {
     const token = extractToken(req);
 
     if (!token) {
@@ -28,6 +28,7 @@ export const authMiddleware = (req: JwtRequest, _res: Response, next: NextFuncti
         const payload = validateToken(token);
         req.user = payload;
     } catch (error) {
+        res.status(401).json({ error: "Invalid or expired token" });
         return next(error);
     }
 

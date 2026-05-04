@@ -8,8 +8,10 @@ import { router } from "./routes";
 import { globalLimiter } from "./middlewares/rate-limiter";
 import helmet from "helmet";
 import { socketInitialize } from "./websocket";
-import { createServer } from "http";
+import { createServer, Server } from "http";
 import cookieParser from "cookie-parser";
+
+let httpServer: Server | null = null;
 
 async function initializeApp() {
     const app = express();
@@ -18,12 +20,23 @@ async function initializeApp() {
     setupRoutes(app);
     setupErrorHandling(app);
 
-    const httpServer = createServer(app);
+    httpServer = createServer(app);
     await socketInitialize(httpServer);
 
-    const PORT = process.env.PORT;
-    httpServer.listen(PORT, () => {
-        console.log(`Attack Visualization System is running on port ${PORT}`);
+    const PORT = process.env.PORT || 3000;
+    return new Promise<void>((resolve, reject) => {
+        httpServer!.listen(PORT, () => {
+            console.log(`Attack Visualization System is running on port ${PORT}`);
+            resolve();
+        }).on("error", (err: any) => {
+            if (err.code === "EADDRINUSE") {
+                console.error(`[FATAL] Port ${PORT} is already in use!`);
+                console.error("Run 'taskkill /F /IM node.exe /T' to free up the port.");
+                process.exit(1);
+            }
+            console.error("Failed to start server:", err);
+            reject(err);
+        });
     });
 }
 
@@ -31,6 +44,55 @@ initializeApp().catch(err => {
     console.error("Failed to start app:", err);
     process.exit(1);
 });
+
+function setupGracefulShutdown() {
+    const signals = ["SIGTERM", "SIGINT"];
+
+    signals.forEach(signal => {
+        process.on(signal, async () => {
+            console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+
+            if (!httpServer) {
+                console.log("Server not initialized, exiting immediately");
+                process.exit(0);
+            }
+
+            // Stop accepting new connections
+            httpServer.close(() => {
+                console.log("HTTP server closed, no new connections accepted");
+            });
+
+            // Graceful disconnect timeout (30 seconds)
+            const shutdownTimeout = setTimeout(() => {
+                console.error("Graceful shutdown timeout exceeded, forcing exit...");
+                process.exit(1);
+            }, 30000);
+
+            // Wait for all connections to close
+            // Socket.io will handle its own connection cleanup
+            httpServer.once("close", () => {
+                clearTimeout(shutdownTimeout);
+                console.log("All connections closed, shutting down gracefully");
+
+                // TODO: Add your cleanup here
+                // await database.disconnect();
+                // await redis.disconnect();
+
+                process.exit(0);
+            });
+
+            // Force close connections that don't close in time
+            setTimeout(() => {
+                if (httpServer && httpServer.listening) {
+                    console.warn("Some connections still open, destroying them...");
+                    httpServer.closeAllConnections?.();
+                }
+            }, 25000);
+        });
+    });
+}
+
+setupGracefulShutdown();
 
 function setupMiddleware(app: Application) {
     app.set("trust proxy", 1);

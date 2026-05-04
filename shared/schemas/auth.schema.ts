@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { UserResponseSchema } from "./user.schema";
-import { snakeToCamelTransform } from "../utils";
 
 export const LoginRequestSchema = z.object({
     email: z
@@ -19,10 +18,12 @@ export const LoginRequestSchema = z.object({
         .refine((val) => !val.includes("123456"), {
             message: "Password is too weak, don't use consecutive sequences!",
         }),
-    remember_me: z.boolean().default(false)
-}).strict().transform(snakeToCamelTransform);
+    rememberMe: z.boolean().default(false)
+}).strict();
 
 export const LoginResponseSchema = z.object({
     message: z.string(),
+    accessToken: z.string(),
+    expiresIn: z.number(),
     user: UserResponseSchema
 });

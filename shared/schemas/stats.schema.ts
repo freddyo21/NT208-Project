@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { EAttackTypes } from "../types";
-import { decimal96, snakeToCamelTransform } from "../utils";
+import { decimal96 } from "../utils";
 
 const SummaryDataSchema = z.object({
-    total_attacks: z.number().nonnegative(),
-    top_attack_type: z.enum(EAttackTypes),
-    top_source_ip: z.ipv4().or(z.ipv6()),
+    totalAttacks: z.number().nonnegative(),
+    topAttackType: z.enum(EAttackTypes),
+    topSourceIp: z.ipv4().or(z.ipv6()),
     // active_sensors: z.number(),
-}).transform(snakeToCamelTransform);
+});
 
 const TimelineDataSchema = z.array(z.object({
     timestamp: z.iso.datetime(), // ISO 8601
@@ -15,8 +15,8 @@ const TimelineDataSchema = z.array(z.object({
 })).min(0);
 
 const GeoMapDataSchema = z.array(z.object({
-    country_code: z.string().length(2), // VD: "VN", "US"
-    country_name: z.string().min(4).max(56), // Tên quốc gia, tối đa 56 ký tự (The United Kingdom of Great Britain and Northern Ireland)
+    countryCode: z.string().length(2), // VD: "VN", "US"
+    countryName: z.string().min(4).max(56), // Tên quốc gia, tối đa 56 ký tự (The United Kingdom of Great Britain and Northern Ireland)
     // Tọa độ tấn công nhận được
     lat: z.coerce.number()
         .min(-90).max(90)
@@ -26,7 +26,7 @@ const GeoMapDataSchema = z.array(z.object({
         .refine(decimal96, "Longitude must be DECIMAL(9,6)"),
     count: z.number().int().nonnegative(),
     intensity: z.number().min(0).max(1), // Dùng cho Heatmap
-})).min(0).transform(snakeToCamelTransform);
+})).min(0);
 
 export const AttackStatsRequestSchema = z.object({
     type: z.enum(["summary", "timeline", "geomap"]),
@@ -37,8 +37,8 @@ export const AttackStatsRequestSchema = z.object({
         z.literal(1209600), // 2 weeks,
         z.literal(2592000)  // 1 month (30 days)
     ]), // in seconds
-    attack_type: z.enum(EAttackTypes).optional(),
-}).strict().transform(snakeToCamelTransform);
+    attackType: z.enum(EAttackTypes).optional(),
+}).strict();
 
 // Schema tổng hợp (Discriminated Union)
 // Giúp TypeScript tự gợi ý field dựa trên giá trị của "type"

@@ -22,7 +22,7 @@ const routesConfig = [
         element: (
             <IndexRoutes />
         )
-    },
+    },  
     {
         path: "admin",
         element: (

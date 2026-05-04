@@ -29,9 +29,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "@attack-visualization-system/shared": [
-        "../shared/src/index.ts"
       ]
     }
   },
