@@ -282,6 +282,7 @@
     padding: 9px 12px;
     outline: none;
     caret-color: #00ff41;
+    box-sizing: border-box;
     transition: border-color .2s, background .2s;
 }
 
@@ -300,7 +301,7 @@
 }
 
 .lg-input--pw {
-    padding-right: 36px;
+    padding-right: 40px;
 }
 
 .lg-pw-wrap {
@@ -309,7 +310,7 @@
 
 .lg-eye {
     position: absolute;
-    right: 10px;
+    right: 0px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
@@ -319,6 +320,7 @@
     font-size: 12px;
     line-height: 1;
     transition: color .15s;
+    padding: 0.6rem;
 }
 
 .lg-eye:hover {

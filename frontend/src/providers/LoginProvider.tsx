@@ -27,7 +27,7 @@ export default function LoginProvider({ children }: { children: ReactNode }) {
             setIsAuthenticated(true);
             navigate("/", { replace: true });
         } catch (error: any) {
-            const errorMessage = error.response?.data?.message || error.message || "Đã có lỗi xảy ra.";
+            const errorMessage = error.response?.data?.message || error.message || "An error occured.";
             console.error("Login failed:", errorMessage);
             
 

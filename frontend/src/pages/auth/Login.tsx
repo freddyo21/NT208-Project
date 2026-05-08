@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, SubmitEvent } from "react";
 import { useLogin } from "@/hooks/useLogin";
 import "./Login.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 function useClock() {
     const [time, setTime] = useState(() => new Date().toTimeString().slice(0, 8));
@@ -16,11 +18,11 @@ export default function Login() {
     const time = useClock();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const [email, setEmail]       = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRemember] = useState(false);
-    const [loading, setLoading]   = useState(false);
-    const [error, setError]       = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [showPass, setShowPass] = useState(false);
 
     useEffect(() => {
@@ -36,9 +38,10 @@ export default function Login() {
             ctx.fillStyle = "rgba(0,0,0,0.05)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#00ff41";
-            ctx.font = "13px 'Share Tech Mono', monospace";
+            ctx.font = "13px 'MS Gothic', monospace";
             drops.forEach((y, i) => {
                 ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), i * 18, y * 16);
+                // ctx.fillText(String.fromCharCode(0x30 + Math.random() * 2), i * 18, y * 16);
                 if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             });
@@ -46,17 +49,17 @@ export default function Login() {
         return () => { clearInterval(id); window.removeEventListener("resize", resize); };
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError(null);
-        if (!email.trim())    return setError("Email không được để trống.");
-        if (!password.trim()) return setError("Mật khẩu không được để trống.");
+        if (!email.trim()) return setError("Email cannot be empty.");
+        if (!password.trim()) return setError("Password cannot be empty.");
         setLoading(true);
         try {
             await login(email.trim(), password, rememberMe);
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } }; message?: string };
-            setError(e?.response?.data?.message ?? e?.message ?? "Đăng nhập thất bại.");
+            setError(e?.response?.data?.message ?? e?.message ?? "Login failed.");
         } finally {
             setLoading(false);
         }
@@ -90,7 +93,11 @@ export default function Login() {
 
                     <div className="lg-body">
                         <div className="lg-header">
-                            <div className="lg-logo"><span className="lg-dim">[</span>SENTINEL<span className="lg-dim">]</span></div>
+                            <div className="lg-logo">
+                                <span className="lg-dim">[</span>
+                                SENTINEL
+                                <span className="lg-dim">]</span>
+                            </div>
                             <div className="lg-subtitle">ATTACK VISUALIZATION SYSTEM v3.1</div>
                             <div className="lg-tagline"><span className="lg-led" /> SECURE ACCESS TERMINAL</div>
                         </div>
@@ -115,7 +122,7 @@ export default function Login() {
                                         placeholder="••••••••" value={password} disabled={loading}
                                         onChange={e => { setPassword(e.target.value); setError(null); }} />
                                     <button type="button" className="lg-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
-                                        {showPass ? "○" : "●"}
+                                        <FontAwesomeIcon icon={showPass ? faEye : faEyeSlash} />
                                     </button>
                                 </div>
                             </div>

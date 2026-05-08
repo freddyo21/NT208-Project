@@ -6,7 +6,7 @@ export const IndexRoutes = () => {
     return (
         <Routes>
             <Route index element={<Index />} />
-            <Route path="*" element={<Navigate to="/main" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     )
 }
