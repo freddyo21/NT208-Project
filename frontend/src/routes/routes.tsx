@@ -1,24 +1,22 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { AdminLayout } from "@/layouts/AdminLayout";
-
-import { lazy } from "react";
-
-const AdminRoutes = lazy(() => import("./AdminRoutes"));
-
+import { AuthLayout } from "@/layouts/AuthLayout";
+import { UserLayout } from "@/layouts/UserLayout";
 import { IndexRoutes } from "./IndexRoutes";
 import { AuthRoutes } from "./AuthRoutes";
-import { AuthLayout } from "@/layouts/AuthLayout";
 import { UserRoutes } from "./UserRoutes";
 import LoginProvider from "@/providers/LoginProvider";
 import { ERoleLevels } from "@/types/enumerations/ERoleLevels";
 import { RoleCheckMiddleware } from "@/middlewares/RoleCheckMiddleware";
-import { UserLayout } from "@/layouts/UserLayout";
+
+const AdminRoutes = lazy(() => import("./AdminRoutes"));
 
 // Route configuration object (config-based)
 const routesConfig = [
     {
-        path: "/*",
+        path: "main",
         element: (
             <IndexRoutes />
         )
@@ -57,11 +55,9 @@ const routesConfig = [
 // Helper function to recursively render routes from config
 function renderRoutes(routesArray: any) {
     return routesArray.map((route: any, idx: number) => {
-        // Handle index route (React Router v6+)
         if (route.index) {
             return <Route key={`route-${idx}`} index element={route.element} />;
         }
-        // Route with children (nested)
         if (route.children) {
             return (
                 <Route
@@ -73,7 +69,6 @@ function renderRoutes(routesArray: any) {
                 </Route>
             );
         }
-        // Regular route
         return (
             <Route
                 key={`route-${idx}`}

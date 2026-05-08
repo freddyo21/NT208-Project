@@ -32,6 +32,4 @@ function App() {
   )
 }
 
-export default function App() {
-  return null
-}
+export default App
