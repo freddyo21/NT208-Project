@@ -1,3 +1,4 @@
+import { getAccessToken } from "@/utilities/accessToken";
 import axios from "axios";
 
 const serverApiUrl = import.meta.env.VITE_SERVER_API_URL;
@@ -13,7 +14,9 @@ const HttpClient = axios.create({
 
 HttpClient.interceptors.request.use(
   async (config) => {
-    
+    const token = getAccessToken();
+    config.headers.Authorization = `Bearer ${token}`;
+
     return config;
   },
   (error) => {
