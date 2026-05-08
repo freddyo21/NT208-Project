@@ -39,7 +39,7 @@ export const TargetSchema = z.object({
     description: z.string().optional(),
 }).strict();
 
-export const AttackEventResponseSchema = z.object({
+const AttackEventBaseSchema = z.object({
     id: z.uuidv7(),
     type: z.enum(EAttackTypes),
     sourceIp: z.ipv4().or(z.ipv6()),
@@ -53,7 +53,9 @@ export const AttackEventResponseSchema = z.object({
     }).optional(),
     protocol: z.enum(EProtocols).optional(),
     asset: TargetSchema,
-}).refine((data) => {
+});
+
+export const AttackEventResponseSchema = AttackEventBaseSchema.refine((data) => {
     if (data.protocol === "ICMP" && data.payload && data.payload.size > 1024) {
         return false;
     }
@@ -63,12 +65,12 @@ export const AttackEventResponseSchema = z.object({
     path: ["payload", "size"]
 });
 
+export const AttackEventDTOSchema = AttackEventBaseSchema.omit({ id: true });
+
 export const AttackHistoryResponseSchema = z.object({
     events: z.array(AttackEventResponseSchema),
     total: z.number().int().nonnegative(),
 });
-
-export const AttackEventDTOSchema = AttackEventResponseSchema.omit({ id: true });
 
 export const AttackHistoryResponseDTOSchema = AttackHistoryResponseSchema.omit({ events: true }).extend({
     events: z.array(AttackEventDTOSchema)
