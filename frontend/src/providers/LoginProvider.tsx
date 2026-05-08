@@ -1,12 +1,13 @@
 import { LoginContext } from "@/contexts/LoginContext";
 import { userLogin, userLogout } from "@/services/auth.services";
-import { IUser } from "@attack-visualization-system/shared";
+import { setAccessToken } from "@/utilities/accessToken";
+import { IUserResponse } from "@attack-visualization-system/shared";
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginProvider({ children }: { children: ReactNode }) {
     // Giả lập trạng thái đăng nhập và thông tin người dùng
-    const [currentUser, setCurrentUser] = useState<IUser | null>(null);
+    const [currentUser, setCurrentUser] = useState<IUserResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -23,13 +24,16 @@ export default function LoginProvider({ children }: { children: ReactNode }) {
                 throw new Error("Invalid username or password");
             }
 
-            setCurrentUser(result.user);
+            const { user, accessToken, expiresIn } = result;
+
+            setAccessToken(accessToken);
+            setCurrentUser(user);
             setIsAuthenticated(true);
             navigate("/", { replace: true });
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || "An error occured.";
             console.error("Login failed:", errorMessage);
-            
+
 
             setCurrentUser(null);
             setIsAuthenticated(false);

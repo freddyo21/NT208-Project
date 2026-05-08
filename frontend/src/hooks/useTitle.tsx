@@ -7,13 +7,13 @@ import { useEffect } from "react";
  * 
  * Usage:
  * 
- * `useTitle()` - "Attack Visualization System"
+ * `useTitle()` - "Sentinel ATK-VIG 3.1"
  *   
- * `useTitle("Home")` - "Attack Visualization System | Home"
+ * `useTitle("Home")` - "Sentinel ATK-VIG 3.1 | Home"
  */
 export const useTitle = (subTitle?: string) => {
   useEffect(() => {
-    const baseTitle = "Attack Visualization System";
+    const baseTitle = "Sentinel ATK-VIG 3.1";
     if (subTitle && subTitle.trim() !== "") {
       document.title = `${baseTitle} | ${subTitle}`;
     } else {

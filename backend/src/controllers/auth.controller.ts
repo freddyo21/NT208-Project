@@ -21,7 +21,7 @@ export const login = async (req: Request, res: Response<LoginResponseDTO>, next:
       httpOnly: true,
       secure: isProduction,
       sameSite: "strict",
-      path: "/api/v1/auth",
+      path: "/",
       ...(cleanData.rememberMe && { maxAge: REFRESH_TOKEN_EXPIRY * 1000 })
     });
 
@@ -51,7 +51,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       httpOnly: true,
       secure: isProduction,
       sameSite: "strict",
-      path: "/api/v1/auth"
+      path: "/"
     });
 
     return res.status(200).json({
@@ -77,7 +77,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      path: "/api/v1/auth",
+      path: "/",
     });
 
     return res.status(200).json({ message: "Logged out successfully." });

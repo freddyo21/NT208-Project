@@ -24,6 +24,16 @@ const cleanupExpiredRefreshTokens = () => {
     }
 };
 
+// export const extractToken = (req: Request): string | null => {
+//     const token = req.cookies?.token;
+
+//     if (token && typeof token === "string") {
+//         return token;
+//     }
+
+//     return null;
+// };
+
 const generateRefreshTokenString = (): string => {
     const randomBytes = crypto.getRandomValues(new Uint8Array(32));
     return Array.from(randomBytes)
@@ -48,7 +58,6 @@ export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1
         privateKey,
         {
             algorithm: "ES256",
-            issuer: process.env.JWT_ISSUER,
             expiresIn,
         }
     );

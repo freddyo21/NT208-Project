@@ -1,4 +1,4 @@
-import { CreateUserRequestSchema, IUser, UserResponseSchema, UserSchema } from "@attack-visualization-system/shared";
+import { IUser, UserResponseSchema, UserSchema } from "@attack-visualization-system/shared";
 import { pool } from "../configurations/database.config";
 import { Exception } from "../exceptions";
 
@@ -6,11 +6,8 @@ const USER_SELECT_COLUMNS = `
     u."id",
     u."name",
     u."email",
-    u."username",
     u."password_hash" AS "passwordHash",
-    u."elo",
     u."status",
-    u."is_verified" AS "isVerified",
     u."created_at" AS "createdAt",
     u."updated_at" AS "updatedAt",
     u."last_login" AS "lastLogin"
@@ -46,21 +43,6 @@ export const findByEmail = async (email: string) => {
     return UserSchema.parse(user);
 };
 
-// export const findByUsername = async (username: string) => {
-//     const query = `
-//         SELECT ${USER_SELECT_COLUMNS}, r.name AS role
-//         FROM "users" u
-//         JOIN "roles" r ON u.role_id = r.id
-//         WHERE u.username = $1
-//         LIMIT 1
-//     `;
-//     const result = await pool.query<IUser>(query, [username]);
-//     const user = result.rows[0] ?? null;
-//     if (!user) return null;
-
-//     return UserSchema.parse(user);
-// };
-
 type CreateUserData = Pick<IUser, "name" | "email" | "passwordHash">;
 export const create = async (data: Required<CreateUserData>) => {
     const { name, email, passwordHash } = data;
@@ -81,10 +63,8 @@ export const create = async (data: Required<CreateUserData>) => {
                 iu."name",
                 iu."email",
                 iu."password_hash" AS "passwordHash",
-                iu."elo",
                 r."name" AS "role",
                 iu."status",
-                iu."is_verified" AS "isVerified",
                 iu."created_at" AS "createdAt",
                 iu."updated_at" AS "updatedAt",
                 iu."last_login" AS "lastLogin"

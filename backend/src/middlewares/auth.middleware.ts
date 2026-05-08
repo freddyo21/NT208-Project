@@ -1,24 +1,11 @@
-import { NextFunction, Request, Response } from "express";
-import { validateToken } from "../utils/jwt-handler";
-import { JwtPayload } from "jsonwebtoken";
+import { NextFunction, Response } from "express";
+import {  validateToken } from "../utils/jwt-handler";
 import { JwtInvalidException } from "../exceptions";
-
-type JwtRequest = Request & {
-    user?: string | JwtPayload;
-};
-
-const extractToken = (req: Request): string | null => {
-    const token = req.cookies?.token;
-
-    if (token && typeof token === "string") {
-        return token;
-    }
-
-    return null;
-};
+import { JwtRequest } from "../types/JwtRequest";
+import { getBearerToken } from "../auth/jwt-verify";
 
 export const authMiddleware = (req: JwtRequest, res: Response, next: NextFunction) => {
-    const token = extractToken(req);
+    const token = getBearerToken(req);
 
     if (!token) {
         return next(new JwtInvalidException("Missing authorization token"));

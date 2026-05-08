@@ -12,13 +12,8 @@ export const UserSchema = z.object({
         .min(1, { message: "Email cannot be empty" })
         .max(100, { message: "Email cannot exceed 100 characters" }),
     passwordHash: z.string().min(8), // Trường nhạy cảm
-    elo: z.number()
-        .int()
-        .min(0)
-        .default(1200),
     role: z.enum(ERoles).default(ERoles.OPERATOR),
     status: z.enum(["active", "inactive", "pending", "banned"]).default("active"),
-    isVerified: z.boolean().default(false),
     createdAt: z.date(),
     updatedAt: z.date(),
     lastLogin: z.date().nullable()
@@ -54,16 +49,16 @@ export const UpdateUserResponseSchema = z.object({
 }).strict();
 
 export const ChangePasswordRequestSchema = z.object({
-    old_password: z.string().min(1, { message: "Old password cannot be empty" }), // Không cần min(8) ở đây, cứ có là được để check
-    new_password: z.string()
+    oldPassword: z.string().min(1, { message: "Old password cannot be empty" }), // Không cần min(8) ở đây, cứ có là được để check
+    newPassword: z.string()
         .min(8, { message: "New password must be at least 8 characters" })
         .max(50, { message: "Password too long" }),
-    confirm_password: z.string()
+    confirmPassword : z.string()
 }).strict()
-    .refine((data) => data.new_password === data.confirm_password, {
+    .refine((data) => data.newPassword === data.confirmPassword, {
         message: "Passwords don't match",
-        path: ["confirm_password"], // Báo lỗi đúng vào field confirm
-    }).refine((data) => data.old_password !== data.new_password, {
+        path: ["confirmPassword"], // Báo lỗi đúng vào field confirm
+    }).refine((data) => data.oldPassword !== data.newPassword, {
         message: "New password must be different from the old one",
-        path: ["new_password"],
+        path: ["newPassword"],
     });

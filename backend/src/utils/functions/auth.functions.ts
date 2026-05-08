@@ -14,7 +14,7 @@ export const validateLoginRequest = (data: Record<string, unknown>): LoginReques
         ...data,
         password: typeof data.password === "string" ? "*".repeat(data.password.length) : undefined
       },
-      error: z.treeifyError(result.error)
+      error: process.env.NODE_ENV === "production" ? z.treeifyError(result.error) : result.error.issues
     });
 
     throw new BadRequestException("Validation Error", result.error.issues);
@@ -32,7 +32,7 @@ export const validateRegisterRequest = (data: Record<string, unknown>): CreateUs
         ...data,
         password: typeof data.password === "string" ? "*".repeat(data.password.length) : undefined
       },
-      error: z.treeifyError(result.error)
+      error: process.env.NODE_ENV === "production" ? z.treeifyError(result.error) : result.error.issues
     });
 
     throw new BadRequestException("Validation Error", result.error.issues);

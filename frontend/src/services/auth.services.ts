@@ -1,9 +1,14 @@
+import { LoginResponseDTO } from "@attack-visualization-system/shared";
 import { HttpClient } from "./HttpClient"
 
-export const userLogin = async (username: string, password: string, rememberMe: boolean) => {
+export const userLogin = async (
+    email: string,
+    password: string,
+    rememberMe: boolean
+): Promise<LoginResponseDTO> => {
     try {
         const result = await HttpClient.post("/auth/login", {
-            username,
+            email,
             password,
             rememberMe
         });

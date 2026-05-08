@@ -45,6 +45,11 @@ initializeApp().catch(err => {
     process.exit(1);
 });
 
+/**
+ * ═══════════════════════════════════════════════════════════
+ * GRACEFUL SHUTDOWN HANDLER
+ * ═══════════════════════════════════════════════════════════
+ */
 function setupGracefulShutdown() {
     const signals = ["SIGTERM", "SIGINT"];
 

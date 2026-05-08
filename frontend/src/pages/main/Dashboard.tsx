@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
+import { getAccessToken } from "@/utilities/accessToken";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type AttackType = "DDoS" | "SQLi" | "Brute" | "XSS" | "Scan";
-type Severity   = "LOW" | "MED" | "HIGH" | "CRIT";
-type TimeRange  = "1H" | "6H" | "24H" | "7D";
+type Severity = "LOW" | "MED" | "HIGH" | "CRIT";
+type TimeRange = "1H" | "6H" | "24H" | "7D";
 
 interface AttackEvent {
     id: string;
@@ -25,51 +26,51 @@ interface AttackEvent {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<AttackType, string> = {
-    DDoS:  "#ff3333",
-    SQLi:  "#ffcc00",
+    DDoS: "#ff3333",
+    SQLi: "#ffcc00",
     Brute: "#ff8800",
-    XSS:   "#00ff41",
-    Scan:  "#3399ff",
+    XSS: "#00ff41",
+    Scan: "#3399ff",
 };
 
 const SEV_COLORS: Record<Severity, string> = {
-    LOW:  "#00cc33",
-    MED:  "#ffcc00",
+    LOW: "#00cc33",
+    MED: "#ffcc00",
     HIGH: "#ff8800",
     CRIT: "#ff3333",
 };
 
-const TARGET_LAT   = 10.8231;
-const TARGET_LNG   = 106.6297;
+const TARGET_LAT = 10.8231;
+const TARGET_LNG = 106.6297;
 const TARGET_LABEL = "VN-HCM";
 
 const MOCK_EVENTS: AttackEvent[] = [
-    { id:"e1",  time:"10:39:31", ip:"86.170.173.112",  type:"XSS",   city:"Sofia",     country:"BG", desc:"Script injection via img src attr",     severity:"MED",  srcLat:42.7,  srcLng:23.3   },
-    { id:"e2",  time:"10:39:11", ip:"115.119.103.201", type:"Brute", city:"Bucharest", country:"RO", desc:"SSH brute force: 1,400 tries/min",       severity:"HIGH", srcLat:44.4,  srcLng:26.1   },
-    { id:"e3",  time:"10:39:00", ip:"173.243.62.167",  type:"SQLi",  city:"Jakarta",   country:"ID", desc:"Payload: ' OR 1=1 -- on /login",         severity:"CRIT", srcLat:-6.2,  srcLng:106.8  },
-    { id:"e4",  time:"10:39:00", ip:"76.221.172.67",   type:"Brute", city:"Moscow",    country:"RU", desc:"Admin panel lockout triggered",           severity:"MED",  srcLat:55.7,  srcLng:37.6   },
-    { id:"e5",  time:"10:39:00", ip:"81.231.84.150",   type:"SQLi",  city:"Karachi",   country:"PK", desc:"Payload: ' OR 1=1 -- on /login",         severity:"HIGH", srcLat:24.9,  srcLng:67.0   },
-    { id:"e6",  time:"10:38:50", ip:"249.170.186.145", type:"DDoS",  city:"Bogota",    country:"CO", desc:"Layer 7 HTTP flood on /api/*",            severity:"CRIT", srcLat:4.7,   srcLng:-74.1  },
-    { id:"e7",  time:"10:38:50", ip:"56.159.146.70",   type:"SQLi",  city:"Beijing",   country:"CN", desc:"SLEEP(5) injection flagged",              severity:"MED",  srcLat:39.9,  srcLng:116.4  },
-    { id:"e8",  time:"10:38:50", ip:"67.178.92.240",   type:"SQLi",  city:"Hanoi",     country:"VN", desc:"UNION-based injection blocked",           severity:"LOW",  srcLat:21.0,  srcLng:105.8  },
-    { id:"e9",  time:"10:38:50", ip:"148.28.72.72",    type:"XSS",   city:"Lagos",     country:"NG", desc:"Script injection via img src attr",       severity:"MED",  srcLat:6.5,   srcLng:3.4    },
-    { id:"e10", time:"10:38:35", ip:"167.173.68.115",  type:"SQLi",  city:"Lagos",     country:"NG", desc:"SLEEP(5) injection flagged",              severity:"MED",  srcLat:6.5,   srcLng:3.4    },
-    { id:"e11", time:"10:38:31", ip:"170.167.128.153", type:"Brute", city:"Kyiv",      country:"UA", desc:"Admin panel lockout triggered",           severity:"HIGH", srcLat:50.4,  srcLng:30.5   },
-    { id:"e12", time:"10:38:31", ip:"101.237.157.73",  type:"DDoS",  city:"Cairo",     country:"EG", desc:"SYN flood — 62k req/s",                  severity:"CRIT", srcLat:30.1,  srcLng:31.2   },
-    { id:"e13", time:"10:38:31", ip:"149.8.234.74",    type:"SQLi",  city:"Hanoi",     country:"VN", desc:"SLEEP(5) injection flagged",              severity:"MED",  srcLat:21.0,  srcLng:105.8  },
-    { id:"e14", time:"10:38:46", ip:"54.24.33.44",     type:"DDoS",  city:"Algiers",   country:"DZ", desc:"SYN flood — 62k req/s",                  severity:"HIGH", srcLat:36.7,  srcLng:3.0    },
-    { id:"e15", time:"10:38:38", ip:"204.216.140.155", type:"Brute", city:"Tehran",    country:"IR", desc:"ROP credential stuffing detected",        severity:"CRIT", srcLat:35.7,  srcLng:51.4   },
-    { id:"e16", time:"10:38:31", ip:"245.55.243.237",  type:"SQLi",  city:"Brasilia",  country:"BR", desc:"UNION-based injection blocked",           severity:"MED",  srcLat:-15.8, srcLng:-47.9  },
-    { id:"e17", time:"10:38:31", ip:"132.20.117.139",  type:"DDoS",  city:"Karachi",   country:"PK", desc:"SYN flood — 62k req/s",                  severity:"HIGH", srcLat:24.9,  srcLng:67.0   },
-    { id:"e18", time:"10:38:31", ip:"106.5.240.18",    type:"Scan",  city:"Beijing",   country:"CN", desc:"Port scan 65,535 ports detected",         severity:"LOW",  srcLat:39.9,  srcLng:116.4  },
+    { id: "e1", time: "10:39:31", ip: "86.170.173.112", type: "XSS", city: "Sofia", country: "BG", desc: "Script injection via img src attr", severity: "MED", srcLat: 42.7, srcLng: 23.3 },
+    { id: "e2", time: "10:39:11", ip: "115.119.103.201", type: "Brute", city: "Bucharest", country: "RO", desc: "SSH brute force: 1,400 tries/min", severity: "HIGH", srcLat: 44.4, srcLng: 26.1 },
+    { id: "e3", time: "10:39:00", ip: "173.243.62.167", type: "SQLi", city: "Jakarta", country: "ID", desc: "Payload: ' OR 1=1 -- on /login", severity: "CRIT", srcLat: -6.2, srcLng: 106.8 },
+    { id: "e4", time: "10:39:00", ip: "76.221.172.67", type: "Brute", city: "Moscow", country: "RU", desc: "Admin panel lockout triggered", severity: "MED", srcLat: 55.7, srcLng: 37.6 },
+    { id: "e5", time: "10:39:00", ip: "81.231.84.150", type: "SQLi", city: "Karachi", country: "PK", desc: "Payload: ' OR 1=1 -- on /login", severity: "HIGH", srcLat: 24.9, srcLng: 67.0 },
+    { id: "e6", time: "10:38:50", ip: "249.170.186.145", type: "DDoS", city: "Bogota", country: "CO", desc: "Layer 7 HTTP flood on /api/*", severity: "CRIT", srcLat: 4.7, srcLng: -74.1 },
+    { id: "e7", time: "10:38:50", ip: "56.159.146.70", type: "SQLi", city: "Beijing", country: "CN", desc: "SLEEP(5) injection flagged", severity: "MED", srcLat: 39.9, srcLng: 116.4 },
+    { id: "e8", time: "10:38:50", ip: "67.178.92.240", type: "SQLi", city: "Hanoi", country: "VN", desc: "UNION-based injection blocked", severity: "LOW", srcLat: 21.0, srcLng: 105.8 },
+    { id: "e9", time: "10:38:50", ip: "148.28.72.72", type: "XSS", city: "Lagos", country: "NG", desc: "Script injection via img src attr", severity: "MED", srcLat: 6.5, srcLng: 3.4 },
+    { id: "e10", time: "10:38:35", ip: "167.173.68.115", type: "SQLi", city: "Lagos", country: "NG", desc: "SLEEP(5) injection flagged", severity: "MED", srcLat: 6.5, srcLng: 3.4 },
+    { id: "e11", time: "10:38:31", ip: "170.167.128.153", type: "Brute", city: "Kyiv", country: "UA", desc: "Admin panel lockout triggered", severity: "HIGH", srcLat: 50.4, srcLng: 30.5 },
+    { id: "e12", time: "10:38:31", ip: "101.237.157.73", type: "DDoS", city: "Cairo", country: "EG", desc: "SYN flood — 62k req/s", severity: "CRIT", srcLat: 30.1, srcLng: 31.2 },
+    { id: "e13", time: "10:38:31", ip: "149.8.234.74", type: "SQLi", city: "Hanoi", country: "VN", desc: "SLEEP(5) injection flagged", severity: "MED", srcLat: 21.0, srcLng: 105.8 },
+    { id: "e14", time: "10:38:46", ip: "54.24.33.44", type: "DDoS", city: "Algiers", country: "DZ", desc: "SYN flood — 62k req/s", severity: "HIGH", srcLat: 36.7, srcLng: 3.0 },
+    { id: "e15", time: "10:38:38", ip: "204.216.140.155", type: "Brute", city: "Tehran", country: "IR", desc: "ROP credential stuffing detected", severity: "CRIT", srcLat: 35.7, srcLng: 51.4 },
+    { id: "e16", time: "10:38:31", ip: "245.55.243.237", type: "SQLi", city: "Brasilia", country: "BR", desc: "UNION-based injection blocked", severity: "MED", srcLat: -15.8, srcLng: -47.9 },
+    { id: "e17", time: "10:38:31", ip: "132.20.117.139", type: "DDoS", city: "Karachi", country: "PK", desc: "SYN flood — 62k req/s", severity: "HIGH", srcLat: 24.9, srcLng: 67.0 },
+    { id: "e18", time: "10:38:31", ip: "106.5.240.18", type: "Scan", city: "Beijing", country: "CN", desc: "Port scan 65,535 ports detected", severity: "LOW", srcLat: 39.9, srcLng: 116.4 },
 ];
 
 const ATTACK_TYPE_STATS: { type: AttackType; pct: number }[] = [
-    { type: "DDoS",  pct: 19 },
-    { type: "SQLi",  pct: 23 },
+    { type: "DDoS", pct: 19 },
+    { type: "SQLi", pct: 23 },
     { type: "Brute", pct: 23 },
-    { type: "XSS",   pct: 13 },
-    { type: "Scan",  pct: 21 },
+    { type: "XSS", pct: 13 },
+    { type: "Scan", pct: 21 },
 ];
 
 // ─── Clock hook ───────────────────────────────────────────────────────────────
@@ -91,14 +92,14 @@ interface WorldMapProps {
 }
 
 function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
-    const containerRef    = useRef<HTMLDivElement>(null);
-    const mapRef          = useRef<L.Map | null>(null);
-    const layerRef        = useRef<L.LayerGroup | null>(null);
-    const activeTypesRef  = useRef(activeTypes);
-    const onNewEventRef   = useRef(onNewEvent);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<L.Map | null>(null);
+    const layerRef = useRef<L.LayerGroup | null>(null);
+    const activeTypesRef = useRef(activeTypes);
+    const onNewEventRef = useRef(onNewEvent);
 
     useEffect(() => { activeTypesRef.current = activeTypes; }, [activeTypes]);
-    useEffect(() => { onNewEventRef.current  = onNewEvent;  }, [onNewEvent]);
+    useEffect(() => { onNewEventRef.current = onNewEvent; }, [onNewEvent]);
 
     useEffect(() => {
         if (!containerRef.current || mapRef.current) return;
@@ -133,7 +134,7 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
             const color = TYPE_COLORS[ev.type];
 
             // Quadratic bezier — arc height proportional to distance
-            const dist    = Math.sqrt((tgt[0] - src[0]) ** 2 + (tgt[1] - src[1]) ** 2);
+            const dist = Math.sqrt((tgt[0] - src[0]) ** 2 + (tgt[1] - src[1]) ** 2);
             const ctrlLat = (src[0] + tgt[0]) / 2 + Math.max(dist * 0.28, 14);
             const ctrlLng = (src[1] + tgt[1]) / 2;
 
@@ -161,7 +162,7 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
                 const el = arc.getElement() as SVGPathElement | undefined;
                 if (!el) { arc.setStyle({ opacity: 0.65, dashArray: "5 8" }); return; }
                 const len = el.getTotalLength();
-                el.style.strokeDasharray  = String(len);
+                el.style.strokeDasharray = String(len);
                 el.style.strokeDashoffset = String(len);
                 arc.setStyle({ opacity: 0.7 });
                 void el.getBoundingClientRect();                      // force reflow
@@ -233,7 +234,7 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
             if (activeTypesRef.current.has(base.type)) {
                 fireAttack({
                     ...base,
-                    id:   Date.now().toString(36),
+                    id: Date.now().toString(36),
                     time: new Date().toTimeString().slice(0, 8),
                 });
             }
@@ -271,7 +272,7 @@ interface TopBarProps {
 
 function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onToggleType }: TopBarProps) {
     const types: AttackType[] = ["DDoS", "SQLi", "Brute", "XSS", "Scan"];
-    const ranges: TimeRange[]  = ["1H", "6H", "24H", "7D"];
+    const ranges: TimeRange[] = ["1H", "6H", "24H", "7D"];
 
     return (
         <header className="db-topbar">
@@ -315,8 +316,8 @@ function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onTog
                         className="db-type-toggle"
                         style={{
                             borderColor: activeTypes.has(t) ? TYPE_COLORS[t] : "rgba(0,255,65,0.15)",
-                            color:       activeTypes.has(t) ? TYPE_COLORS[t] : "rgba(0,255,65,0.28)",
-                            background:  activeTypes.has(t) ? TYPE_COLORS[t] + "18" : "transparent",
+                            color: activeTypes.has(t) ? TYPE_COLORS[t] : "rgba(0,255,65,0.28)",
+                            background: activeTypes.has(t) ? TYPE_COLORS[t] + "18" : "transparent",
                         }}
                         onClick={() => onToggleType(t)}
                     >
@@ -331,9 +332,9 @@ function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onTog
 // ─── LeftPanel ────────────────────────────────────────────────────────────────
 
 function LeftPanel({ events }: { events: AttackEvent[] }) {
-    const total    = events.length;
-    const active   = events.filter(e => e.severity === "CRIT" || e.severity === "HIGH").length;
-    const blocked  = events.filter(e => e.severity !== "CRIT").length;
+    const total = events.length;
+    const active = events.filter(e => e.severity === "CRIT" || e.severity === "HIGH").length;
+    const blocked = events.filter(e => e.severity !== "CRIT").length;
     const critical = events.filter(e => e.severity === "CRIT").length;
     const countries = new Set(events.map(e => e.country)).size;
     const uniqueIps = new Set(events.map(e => e.ip)).size;
@@ -360,9 +361,9 @@ function LeftPanel({ events }: { events: AttackEvent[] }) {
             <div className="db-section">
                 <div className="db-section-title">THREAT STATS</div>
                 {([
-                    ["Blocked",    blocked,   undefined],
-                    ["Critical",   critical,  "#ff3333"],
-                    ["Countries",  countries, undefined],
+                    ["Blocked", blocked, undefined],
+                    ["Critical", critical, "#ff3333"],
+                    ["Countries", countries, undefined],
                     ["Unique IPs", uniqueIps, undefined],
                 ] as [string, number, string | undefined][]).map(([label, val, color]) => (
                     <div key={label} className="db-stat-row">
@@ -416,8 +417,8 @@ function EventLog({ events }: { events: AttackEvent[] }) {
                 <span className="db-live-badge"><span className="db-led" /> LIVE</span>
             </div>
             <div className="db-event-list">
-                {events.map(ev => (
-                    <div key={ev.id} className="db-event">
+                {events.map((ev, index) => (
+                    <div key={index} className="db-event">
                         <div className="db-event-meta">
                             <span className="db-event-time">{ev.time}</span>
                             <span className="db-event-ip">{ev.ip}</span>
@@ -450,12 +451,23 @@ function EventLog({ events }: { events: AttackEvent[] }) {
 export default function Dashboard() {
     const time = useClock();
 
-    const [ipFilter,    setIpFilter]    = useState("");
-    const [range,       setRange]       = useState<TimeRange>("1H");
+    const [ipFilter, setIpFilter] = useState("");
+    const [range, setRange] = useState<TimeRange>("1H");
     const [activeTypes, setActiveTypes] = useState<Set<AttackType>>(
         () => new Set(["DDoS", "SQLi", "Brute", "XSS", "Scan"] as AttackType[])
     );
     const [liveEvents, setLiveEvents] = useState<AttackEvent[]>(MOCK_EVENTS);
+
+    useEffect(() => {
+        const initSentinel = async () => {
+            try {
+                await getAccessToken();
+            } catch (err) {
+                
+            }
+        };
+        initSentinel();
+    }, []);
 
     const handleNewEvent = useCallback((ev: AttackEvent) => {
         setLiveEvents(prev => [ev, ...prev.slice(0, 49)]);

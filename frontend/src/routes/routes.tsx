@@ -16,7 +16,7 @@ const AdminRoutes = lazy(() => import("./AdminRoutes"));
 // Route configuration object (config-based)
 const routesConfig = [
     {
-        path: "main",
+        path: "/*",
         element: (
             <IndexRoutes />
         )
