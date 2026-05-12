@@ -18,7 +18,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx src/app.ts",
     "dev": "nodemon --watch \"src/**/*.ts\" --exec \"tsx\" src/app.ts",
-    "test:socket-attack": "tsx src/scripts/socket-attack-flow.ts",
+    "test:socket-attack": "tsx src/scripts/socket-attack-flow/index.ts",
     "build": "npx tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
