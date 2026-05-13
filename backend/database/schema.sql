@@ -1,11 +1,35 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE OR REPLACE FUNCTION uuidv7()
+RETURNS UUID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    unix_ts_ms BIGINT;
+    rand BYTEA;
+    rand_hex TEXT;
+    variant_nibble TEXT;
+BEGIN
+    unix_ts_ms := FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
+    rand := gen_random_bytes(10);
+    rand_hex := encode(rand, 'hex');
+    variant_nibble := substr('89ab', (get_byte(rand, 2) & 3) + 1, 1);
+
+    RETURN (
+        lpad(to_hex(unix_ts_ms), 12, '0') ||
+        '7' || substr(rand_hex, 1, 3) ||
+        variant_nibble || substr(rand_hex, 4, 3) ||
+        substr(rand_hex, 7, 12)
+    )::UUID;
+END;
+$$;
+
 DO $$
 BEGIN
-    CREATE TYPE attack_severity AS ENUM ('low', 'medium', 'high', 'critical');
+    CREATE TYPE attack_severity AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
 EXCEPTION
     WHEN duplicate_object THEN NULL;
-END
+END;
 $$;
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -13,24 +37,40 @@ CREATE TABLE IF NOT EXISTS roles (
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
+INSERT INTO roles (name) VALUES
+('admin'),
+('operator')
+ON CONFLICT (name) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION default_user_role_id()
+RETURNS INT
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT id
+    FROM roles
+    WHERE name = 'operator'
+    LIMIT 1
+$$;
+
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role_id INT NOT NULL,
+    role_id INT NOT NULL DEFAULT default_user_role_id(),
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login TIMESTAMPTZ,
     CONSTRAINT fk_users_role
         FOREIGN KEY (role_id) REFERENCES roles(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );
 
--- Đổi id thành UUID theo ERD
 CREATE TABLE IF NOT EXISTS assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     ip INET NOT NULL,
     lat DECIMAL(9,6) NOT NULL,
@@ -39,19 +79,18 @@ CREATE TABLE IF NOT EXISTS assets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Đổi id thành UUID theo ERD
 CREATE TABLE IF NOT EXISTS attack_types (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS attack_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     source_ip INET NOT NULL,
     dest_ip INET NOT NULL,
-    dest_asset_id UUID NOT NULL, -- Đổi sang UUID để khớp với assets.id
-    attack_type_id UUID NOT NULL, -- Đổi sang UUID để khớp với attack_types.id
+    dest_asset_id INT NOT NULL,
+    attack_type_id INT NOT NULL,
     severity attack_severity NOT NULL,
     lat DECIMAL(9,6),
     lng DECIMAL(9,6),
@@ -66,6 +105,12 @@ CREATE TABLE IF NOT EXISTS attack_events (
         ON DELETE RESTRICT
 );
 
+CREATE INDEX IF NOT EXISTS idx_attack_timestamp
+    ON attack_events ("timestamp" DESC);
+
+CREATE INDEX IF NOT EXISTS idx_attack_severity
+    ON attack_events (severity);
+
 CREATE TABLE IF NOT EXISTS attack_logs (
     event_id UUID PRIMARY KEY,
     payload TEXT,
@@ -75,22 +120,3 @@ CREATE TABLE IF NOT EXISTS attack_logs (
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
-
--- Seed data mẫu (Vẫn giữ nguyên vì UUID sẽ được tự động generate)
-INSERT INTO roles (name) VALUES
-('admin'),
-('analyst'),
-('viewer')
-ON CONFLICT (name) DO NOTHING;
-
-INSERT INTO attack_types (name, description) VALUES
-('DDoS', 'Distributed Denial of Service'),
-('Brute Force', 'Repeated login attempts'),
-('SQL Injection', 'Injection attack on database layer'),
-('Port Scan', 'Reconnaissance through port scanning')
-ON CONFLICT (name) DO NOTHING;
-
-INSERT INTO assets (name, ip, lat, lng, description) VALUES
-('Main Web Server', '192.168.1.10', 10.776900, 106.700900, 'Primary dashboard backend'),
-('Database Server', '192.168.1.20', 10.776900, 106.700900, 'PostgreSQL instance'),
-('API Gateway', '192.168.1.30', 10.776900, 106.700900, 'Gateway and routing layer');
