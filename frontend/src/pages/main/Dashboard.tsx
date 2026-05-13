@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
+import { io, type Socket } from "socket.io-client";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
 import { getAccessToken } from "@/utilities/accessToken";
@@ -9,6 +10,8 @@ import { getAccessToken } from "@/utilities/accessToken";
 type AttackType = "DDoS" | "SQLi" | "Brute" | "XSS" | "Scan";
 type Severity = "LOW" | "MED" | "HIGH" | "CRIT";
 type TimeRange = "1H" | "6H" | "24H" | "7D";
+type SocketStatus = "off" | "connecting" | "connected" | "error";
+type TriggerStatus = "idle" | "sending" | "error";
 
 interface AttackEvent {
     id: string;
@@ -21,6 +24,21 @@ interface AttackEvent {
     severity: Severity;
     srcLat: number;
     srcLng: number;
+}
+
+interface RawSocketAttackEvent {
+    id?: string;
+    time?: string;
+    timestamp?: string;
+    sourceIp?: string;
+    ip?: string;
+    type?: string;
+    city?: string;
+    country?: string;
+    desc?: string;
+    severity?: string;
+    srcLat?: number;
+    srcLng?: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -43,6 +61,22 @@ const SEV_COLORS: Record<Severity, string> = {
 const TARGET_LAT = 10.8231;
 const TARGET_LNG = 106.6297;
 const TARGET_LABEL = "VN-HCM";
+
+// API_BASE_URL dung cho REST API, vi du POST /auth/demo-token va POST /attacks.
+const API_BASE_URL = import.meta.env.VITE_SERVER_API_URL ?? "http://localhost:3000/api/v1";
+
+// SOCKET_URL dung rieng cho Socket.IO. Khong them /api/v1 vao socket URL.
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:3000";
+
+// Neu true thi Dashboard tu chay mock attack cu.
+// Demo socket nen de false de attack chi xuat hien khi co event socket that.
+const ENABLE_MOCK_ATTACKS = import.meta.env.VITE_ENABLE_MOCK_ATTACKS === "true";
+
+// Neu true thi vao thang Dashboard, khong goi refresh token va khong bi day ve login.
+const SKIP_DASHBOARD_AUTH = import.meta.env.VITE_SKIP_DASHBOARD_AUTH === "true";
+
+// Neu true thi Dashboard lay demo JWT tu backend de connect socket khi chua login.
+const USE_DEMO_SOCKET_TOKEN = import.meta.env.VITE_USE_DEMO_SOCKET_TOKEN === "true";
 
 const MOCK_EVENTS: AttackEvent[] = [
     { id: "e1", time: "10:39:31", ip: "86.170.173.112", type: "XSS", city: "Sofia", country: "BG", desc: "Script injection via img src attr", severity: "MED", srcLat: 42.7, srcLng: 23.3 },
@@ -73,6 +107,76 @@ const ATTACK_TYPE_STATS: { type: AttackType; pct: number }[] = [
     { type: "Scan", pct: 21 },
 ];
 
+const DEMO_ATTACK_TYPES = ["DDOS", "SQL_INJECTION", "BRUTE_FORCE", "XSS", "PORT_SCANNING"];
+const DEMO_SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+
+// Backend socket dung ten type theo enum backend.
+// Dashboard cu lai dung label ngan hon, nen can map ve UI type.
+const SOCKET_TYPE_TO_DASHBOARD_TYPE: Record<string, AttackType> = {
+    DDOS: "DDoS",
+    DOS: "DDoS",
+    SYN_FLOOD: "DDoS",
+    SQL_INJECTION: "SQLi",
+    BRUTE_FORCE: "Brute",
+    CREDENTIAL_STUFFING: "Brute",
+    XSS: "XSS",
+    PORT_SCANNING: "Scan"
+};
+
+// Backend dung MEDIUM/CRITICAL, Dashboard cu dung MED/CRIT.
+// Map severity giup event socket hien dung mau tren UI.
+const SOCKET_SEVERITY_TO_DASHBOARD_SEVERITY: Record<string, Severity> = {
+    LOW: "LOW",
+    MEDIUM: "MED",
+    MED: "MED",
+    HIGH: "HIGH",
+    CRITICAL: "CRIT",
+    CRIT: "CRIT"
+};
+
+const normalizeSocketAttackEvent = (event: RawSocketAttackEvent): AttackEvent => {
+    // Chuyen event tu backend socket ve shape ma Dashboard/WorldMap dang dung.
+    // Neu backend thieu field nao thi gan fallback de UI khong crash.
+    const type = SOCKET_TYPE_TO_DASHBOARD_TYPE[event.type ?? ""] ?? "DDoS";
+    const severity = SOCKET_SEVERITY_TO_DASHBOARD_SEVERITY[event.severity ?? ""] ?? "HIGH";
+    const timestamp = event.timestamp ? new Date(event.timestamp) : null;
+
+    return {
+        id: event.id ?? Date.now().toString(36),
+        time: event.time ?? (timestamp && !Number.isNaN(timestamp.valueOf())
+            ? timestamp.toTimeString().slice(0, 8)
+            : new Date().toTimeString().slice(0, 8)),
+        ip: event.ip ?? event.sourceIp ?? "192.168.1.10",
+        type,
+        city: event.city ?? "Unknown",
+        country: event.country ?? "--",
+        desc: event.desc ?? `${type} activity detected`,
+        severity,
+        srcLat: typeof event.srcLat === "number" ? event.srcLat : 21,
+        srcLng: typeof event.srcLng === "number" ? event.srcLng : 105.8
+    };
+};
+
+const getDemoSocketToken = async (): Promise<string | null> => {
+    // Khi bo qua login, browser van can JWT de pass socket middleware.
+    // Endpoint /auth/demo-token tao JWT demo chi cho local demo.
+    const response = await fetch(`${API_BASE_URL}/auth/demo-token`, {
+        method: "POST",
+        credentials: "include"
+    });
+    const body = await response.json().catch(() => ({})) as { accessToken?: unknown };
+
+    if (!response.ok || typeof body.accessToken !== "string") {
+        throw new Error(`Demo socket token failed with status ${response.status}`);
+    }
+
+    return body.accessToken;
+};
+
+// Dung de tao delay nho giua cac request trigger attack.
+// Neu gui 6 attack cung luc thi animation bi chong qua nhanh, kho nhin.
+const sleep = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+
 // ─── Clock hook ───────────────────────────────────────────────────────────────
 
 function useClock() {
@@ -88,13 +192,26 @@ function useClock() {
 
 interface WorldMapProps {
     activeTypes: Set<AttackType>;
+    incomingEvent?: AttackEvent | null;
+    enableMockAttacks: boolean;
     onNewEvent?: (ev: AttackEvent) => void;
 }
 
-function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
+function WorldMap({ activeTypes, incomingEvent, enableMockAttacks, onNewEvent }: WorldMapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
     const layerRef = useRef<L.LayerGroup | null>(null);
+
+    // fireAttackRef giu ham ve attack tren Leaflet map.
+    // Ham nay chi co sau khi map khoi tao xong.
+    const fireAttackRef = useRef<((ev: AttackEvent) => void) | null>(null);
+
+    // Neu socket event den qua som, luc map chua san sang,
+    // ta tam giu event o day va ve lai sau khi map khoi tao xong.
+    const pendingEventsRef = useRef<AttackEvent[]>([]);
+
+    // Ref nay giup interval/socket callback doc activeTypes moi nhat
+    // ma khong can khoi tao lai Leaflet map moi lan filter thay doi.
     const activeTypesRef = useRef(activeTypes);
     const onNewEventRef = useRef(onNewEvent);
 
@@ -104,6 +221,8 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
     useEffect(() => {
         if (!containerRef.current || mapRef.current) return;
 
+        // Khoi tao Leaflet map mot lan duy nhat.
+        // Dashboard cu dung OpenStreetMap tile nen giu nguyen map visual cu.
         const map = L.map(containerRef.current, {
             center: [20, 10],
             zoom: 2,
@@ -115,8 +234,10 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
         });
         mapRef.current = map;
 
+        // Tile map cu cua project. Neu mang/OSM cham thi tile co the load tre.
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
+        // Layer rieng de add/remove arc, marker, particle cua attack.
         const layer = L.layerGroup().addTo(map);
         layerRef.current = layer;
 
@@ -129,6 +250,8 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
         ).openTooltip();
 
         const fireAttack = (ev: AttackEvent) => {
+            // Ham nay la phan ve animation attack:
+            // source -> target, co arc, marker source, particle, va impact ring.
             const src: [number, number] = [ev.srcLat, ev.srcLng];
             const tgt: [number, number] = [TARGET_LAT, TARGET_LNG];
             const color = TYPE_COLORS[ev.type];
@@ -220,32 +343,62 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
 
             onNewEventRef.current?.(ev);
         };
+        fireAttackRef.current = fireAttack;
 
-        // Initial burst — stagger 200 ms apart
-        MOCK_EVENTS.forEach((ev, i) => {
-            setTimeout(() => {
-                if (activeTypesRef.current.has(ev.type)) fireAttack(ev);
-            }, 300 + i * 200);
+        // Ve cac event socket da den truoc khi map san sang.
+        pendingEventsRef.current.splice(0).forEach((event) => {
+            if (activeTypesRef.current.has(event.type)) {
+                fireAttack(event);
+            }
         });
 
-        // Ongoing auto-fire every 1800 ms
-        const interval = setInterval(() => {
-            const base = MOCK_EVENTS[Math.floor(Math.random() * MOCK_EVENTS.length)];
-            if (activeTypesRef.current.has(base.type)) {
-                fireAttack({
-                    ...base,
-                    id: Date.now().toString(36),
-                    time: new Date().toTimeString().slice(0, 8),
-                });
-            }
-        }, 1800);
+        let interval: ReturnType<typeof setInterval> | undefined;
+
+        if (enableMockAttacks) {
+            // Che do mock cu, hien dang tat bang VITE_ENABLE_MOCK_ATTACKS=false.
+            // Giu lai de sau nay can demo UI khong can backend thi bat len.
+            // Initial burst — stagger 200 ms apart
+            MOCK_EVENTS.forEach((ev, i) => {
+                setTimeout(() => {
+                    if (activeTypesRef.current.has(ev.type)) fireAttack(ev);
+                }, 300 + i * 200);
+            });
+
+            // Ongoing auto-fire every 1800 ms
+            interval = setInterval(() => {
+                const base = MOCK_EVENTS[Math.floor(Math.random() * MOCK_EVENTS.length)];
+                if (activeTypesRef.current.has(base.type)) {
+                    fireAttack({
+                        ...base,
+                        id: Date.now().toString(36),
+                        time: new Date().toTimeString().slice(0, 8),
+                    });
+                }
+            }, 1800);
+        }
 
         return () => {
-            clearInterval(interval);
+            if (interval) clearInterval(interval);
+            fireAttackRef.current = null;
             map.remove();
             mapRef.current = null;
         };
     }, []);
+
+    useEffect(() => {
+        // incomingEvent thay doi moi khi socket nhan attack:new.
+        // Neu filter type dang tat thi khong ve event do.
+        if (!incomingEvent || !activeTypesRef.current.has(incomingEvent.type)) return;
+
+        // Neu Leaflet map chua khoi tao xong thi dua vao queue.
+        if (!fireAttackRef.current) {
+            pendingEventsRef.current.push(incomingEvent);
+            return;
+        }
+
+        // Map da san sang thi ve attack ngay lap tuc.
+        fireAttackRef.current(incomingEvent);
+    }, [incomingEvent]);
 
     return (
         <>
@@ -262,6 +415,10 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
 
 interface TopBarProps {
     time: string;
+    socketStatus: SocketStatus;
+    triggerStatus: TriggerStatus;
+    onTriggerAttack: () => void;
+    showTriggerAttack: boolean;
     ipFilter: string;
     onIpChange: (v: string) => void;
     range: TimeRange;
@@ -270,9 +427,28 @@ interface TopBarProps {
     onToggleType: (t: AttackType) => void;
 }
 
-function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onToggleType }: TopBarProps) {
+function TopBar({
+    time,
+    socketStatus,
+    triggerStatus,
+    onTriggerAttack,
+    showTriggerAttack,
+    ipFilter,
+    onIpChange,
+    range,
+    onRange,
+    activeTypes,
+    onToggleType
+}: TopBarProps) {
     const types: AttackType[] = ["DDoS", "SQLi", "Brute", "XSS", "Scan"];
     const ranges: TimeRange[] = ["1H", "6H", "24H", "7D"];
+    const socketLabel = socketStatus === "connected"
+        ? "SOCKET CONNECTED"
+        : socketStatus === "connecting"
+            ? "SOCKET CONNECTING"
+            : socketStatus === "error"
+                ? "SOCKET ERROR"
+                : "SOCKET OFF";
 
     return (
         <header className="db-topbar">
@@ -280,9 +456,21 @@ function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onTog
             <span className="db-sep"> // </span>
             <span className="db-ver">ATK-VIG 3.1</span>
             <span className="db-sep"> // </span>
-            <span className="db-live"><span className="db-led" /> LIVE FEED</span>
+            <span className="db-live"><span className="db-led" /> {socketLabel}</span>
             <span className="db-sep"> // </span>
             <span className="db-clock">{time}</span>
+            {showTriggerAttack && (
+                <>
+                    <span className="db-sep"> // </span>
+                    <button
+                        className="db-filter-btn db-filter-btn--on"
+                        disabled={triggerStatus === "sending" || socketStatus !== "connected"}
+                        onClick={onTriggerAttack}
+                    >
+                        {triggerStatus === "sending" ? "SENDING..." : "TRIGGER ATTACK"}
+                    </button>
+                </>
+            )}
             <span className="db-spacer" />
 
             <div className="db-filter-group">
@@ -451,26 +639,156 @@ function EventLog({ events }: { events: AttackEvent[] }) {
 export default function Dashboard() {
     const time = useClock();
 
+    // Cac state UI co san cua Dashboard: filter IP, range, type.
     const [ipFilter, setIpFilter] = useState("");
     const [range, setRange] = useState<TimeRange>("1H");
     const [activeTypes, setActiveTypes] = useState<Set<AttackType>>(
         () => new Set(["DDoS", "SQLi", "Brute", "XSS", "Scan"] as AttackType[])
     );
-    const [liveEvents, setLiveEvents] = useState<AttackEvent[]>(MOCK_EVENTS);
+
+    // liveEvents la danh sach event dang hien o left stats va right Event Log.
+    // Khi mock tat, ban dau list rong; chi socket event moi them vao.
+    const [liveEvents, setLiveEvents] = useState<AttackEvent[]>(
+        ENABLE_MOCK_ATTACKS ? MOCK_EVENTS : []
+    );
+
+    // incomingEvent la event moi nhat nhan tu socket.
+    // Truyen state nay vao WorldMap de WorldMap ve animation.
+    const [incomingEvent, setIncomingEvent] = useState<AttackEvent | null>(null);
+
+    // socketStatus hien tren topbar de biet browser da connect socket chua.
+    const [socketStatus, setSocketStatus] = useState<SocketStatus>("off");
+
+    // triggerStatus dung cho nut TRIGGER ATTACK de disable khi dang gui.
+    const [triggerStatus, setTriggerStatus] = useState<TriggerStatus>("idle");
+
+    // socketRef giu instance Socket.IO client de disconnect khi component unmount.
+    const socketRef = useRef<Socket | null>(null);
+
+    // socketTokenRef giu JWT hien tai, nut TRIGGER ATTACK can token nay de goi REST API.
+    const socketTokenRef = useRef<string | null>(null);
 
     useEffect(() => {
         const initSentinel = async () => {
             try {
-                await getAccessToken();
+                setSocketStatus("connecting");
+
+                // Co 2 cach lay token:
+                // 1. Demo mode: lay demo token tu /auth/demo-token, khong can login.
+                // 2. Real mode: goi getAccessToken() nhu auth flow that.
+                const token = SKIP_DASHBOARD_AUTH
+                    ? USE_DEMO_SOCKET_TOKEN ? await getDemoSocketToken() : null
+                    : await getAccessToken();
+
+                if (!token || socketRef.current) {
+                    setSocketStatus("off");
+                    return;
+                }
+                socketTokenRef.current = token;
+
+                // Tao socket client va gui JWT trong handshake.auth.
+                // Backend websocket.ts se doc token nay trong io.use().
+                const socket = io(SOCKET_URL, {
+                    auth: { token },
+                    transports: ["websocket"]
+                });
+                socketRef.current = socket;
+
+                socket.on("connect", () => {
+                    // Neu topbar hien SOCKET CONNECTED thi browser da qua auth socket.
+                    setSocketStatus("connected");
+                    console.log("Sentinel socket connected:", socket.id);
+
+                    // Subscribe attack stream. Payload rong nghia la nhan tat ca attack.
+                    socket.emit("attack:subscribe", {}, (ack: { ok: boolean; error?: string }) => {
+                        if (!ack?.ok) {
+                            console.warn("Sentinel socket subscribe failed:", ack?.error);
+                        }
+                    });
+                });
+
+                socket.on("attack:new", (event: RawSocketAttackEvent) => {
+                    // Day la event realtime chinh tu backend.
+                    // Normalize xong setIncomingEvent de WorldMap ve animation.
+                    const normalizedEvent = normalizeSocketAttackEvent(event);
+                    console.log("Sentinel socket attack:new:", normalizedEvent);
+                    setIncomingEvent(normalizedEvent);
+                });
+
+                socket.on("connect_error", (error) => {
+                    // Loi hay gap: demo token endpoint tat, JWT sai, CORS/socket URL sai.
+                    setSocketStatus("error");
+                    console.warn("Sentinel socket connection failed:", error.message);
+                });
+
+                socket.on("disconnect", () => {
+                    setSocketStatus("off");
+                });
             } catch (err) {
-                
+                setSocketStatus("error");
+                console.warn("Sentinel socket disabled:", err);
             }
         };
+
         initSentinel();
+
+        return () => {
+            // Cleanup khi thoat Dashboard de tranh giu connection cu.
+            socketRef.current?.disconnect();
+            socketRef.current = null;
+            socketTokenRef.current = null;
+        };
     }, []);
 
     const handleNewEvent = useCallback((ev: AttackEvent) => {
+        // WorldMap goi callback nay moi khi no ve xong/nhan event moi.
+        // Dua event len dau list de counters va Event Log cap nhat.
         setLiveEvents(prev => [ev, ...prev.slice(0, 49)]);
+    }, []);
+
+    const triggerDemoAttack = useCallback(async () => {
+        // Nut nay chi dung cho demo:
+        // Browser goi REST API /attacks, backend service broadcast lai qua socket.
+        if (!socketTokenRef.current) return;
+
+        setTriggerStatus("sending");
+
+        try {
+            // Gui nhieu attack lien tiep de demo nhin ro hon mot event don le.
+            for (let index = 0; index < 6; index++) {
+                const type = DEMO_ATTACK_TYPES[Math.floor(Math.random() * DEMO_ATTACK_TYPES.length)] ?? "DDOS";
+                const severity = DEMO_SEVERITIES[Math.floor(Math.random() * DEMO_SEVERITIES.length)] ?? "HIGH";
+                const sourceIp = `192.168.${Math.floor(Math.random() * 220) + 10}.${Math.floor(Math.random() * 220) + 10}`;
+
+                // API /attacks van duoc bao ve bang authMiddleware,
+                // nen phai gui Authorization Bearer demo JWT.
+                const response = await fetch(`${API_BASE_URL}/attacks`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${socketTokenRef.current}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        type,
+                        severity,
+                        sourceIp,
+                        assetId: "world-map-demo"
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Attack trigger failed with status ${response.status}`);
+                }
+
+                // Delay nho de cac arc khong xuat hien cung luc qua kho nhin.
+                await sleep(180);
+            }
+
+            setTriggerStatus("idle");
+        } catch (error) {
+            console.warn("Sentinel attack trigger failed:", error);
+            setTriggerStatus("error");
+        }
     }, []);
 
     const filteredEvents = liveEvents.filter(e =>
@@ -491,6 +809,10 @@ export default function Dashboard() {
 
             <TopBar
                 time={time}
+                socketStatus={socketStatus}
+                triggerStatus={triggerStatus}
+                onTriggerAttack={triggerDemoAttack}
+                showTriggerAttack={SKIP_DASHBOARD_AUTH && USE_DEMO_SOCKET_TOKEN}
                 ipFilter={ipFilter}
                 onIpChange={setIpFilter}
                 range={range}
@@ -510,7 +832,12 @@ export default function Dashboard() {
                         </span>
                     </div>
                     <div className="db-map-body">
-                        <WorldMap activeTypes={activeTypes} onNewEvent={handleNewEvent} />
+                        <WorldMap
+                            activeTypes={activeTypes}
+                            incomingEvent={incomingEvent}
+                            enableMockAttacks={ENABLE_MOCK_ATTACKS}
+                            onNewEvent={handleNewEvent}
+                        />
                     </div>
                 </section>
 
