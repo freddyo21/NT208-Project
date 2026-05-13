@@ -26,6 +26,7 @@
     "test": "npm --workspace=backend run test"
   },
   "dependencies": {
+    "jwt-decode": "^4.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

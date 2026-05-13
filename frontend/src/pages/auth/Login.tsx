@@ -86,8 +86,9 @@ export default function Login() {
             }
 
             drops.forEach((y, i) => {
-                ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), i * 18, y * 16);
-                // ctx.fillText(String.fromCharCode(0x30 + Math.random() * 2), i * 18, y * 16);
+                ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), i * 18, y * 16); // Đây là để hiện các ký tự katakana ngẫu nhiên, tạo cảm giác "ma trận" hơn
+                // ctx.fillText(String.fromCharCode(0x30 + Math.random() * 2), i * 18, y * 16); // Đây là để hiện 0 và 1
+                // ctx.fillText(String.fromCharCode(0x4E00 + Math.random() * 20000), i * 18, y * 16); // Đây là để hiện các chữ cái kanji ngẫu nhiên
                 if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             });
