@@ -8,7 +8,7 @@ import { IndexRoutes } from "./IndexRoutes";
 import { AuthRoutes } from "./AuthRoutes";
 import { UserRoutes } from "./UserRoutes";
 import LoginProvider from "@/providers/LoginProvider";
-import { ERoleLevels } from "@/types/enumerations/ERoleLevels";
+import { ERoleLevels } from "@attack-visualization-system/shared";
 import { RoleCheckMiddleware } from "@/middlewares/RoleCheckMiddleware";
 
 const AdminRoutes = lazy(() => import("./AdminRoutes"));

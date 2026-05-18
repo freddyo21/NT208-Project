@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
 import { getAccessToken } from "@/utilities/accessToken";
+import { useLogin } from "@/hooks/useLogin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,8 +113,19 @@ function WorldMap({ activeTypes, onNewEvent }: WorldMapProps) {
             zoomControl: false,
             attributionControl: false,
             renderer: L.svg(),
+            dragging: false,
+            scrollWheelZoom: true,
         });
         mapRef.current = map;
+
+        // Enable dragging only when zoomed in past the default world view
+        map.on("zoomend", () => {
+            if (map.getZoom() > 2) {
+                map.dragging.enable();
+            } else {
+                map.dragging.disable();
+            }
+        });
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
@@ -268,9 +280,10 @@ interface TopBarProps {
     onRange: (r: TimeRange) => void;
     activeTypes: Set<AttackType>;
     onToggleType: (t: AttackType) => void;
+    onLogout: () => void;
 }
 
-function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onToggleType }: TopBarProps) {
+function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onToggleType, onLogout }: TopBarProps) {
     const types: AttackType[] = ["DDoS", "SQLi", "Brute", "XSS", "Scan"];
     const ranges: TimeRange[] = ["1H", "6H", "24H", "7D"];
 
@@ -325,6 +338,8 @@ function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onTog
                     </button>
                 ))}
             </div>
+
+            <button className="db-logout-btn" onClick={onLogout}>LOGOUT</button>
         </header>
     );
 }
@@ -450,6 +465,7 @@ function EventLog({ events }: { events: AttackEvent[] }) {
 
 export default function Dashboard() {
     const time = useClock();
+    const { logout } = useLogin();
 
     const [ipFilter, setIpFilter] = useState("");
     const [range, setRange] = useState<TimeRange>("1H");
@@ -497,6 +513,7 @@ export default function Dashboard() {
                 onRange={setRange}
                 activeTypes={activeTypes}
                 onToggleType={toggleType}
+                onLogout={logout}
             />
 
             <div className="db-body">
