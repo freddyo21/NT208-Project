@@ -1,11 +1,14 @@
-import { HttpClient } from "@/services/HttpClient";
 import { AxiosError } from "axios";
-import { sleep } from "./functions/general-functions";
+import { refreshToken } from "@/services/auth.services";
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
 export const getAccessToken = async (): Promise<string | null> => {
+    // console.log("Attempting to get access token..."); // Debug log để theo dõi quá trình lấy token
+    // console.log("Current access token in memory:", accessToken); // Debug log để xem token hiện tại
+    // console.log("Current refresh promise:", refreshPromise); // Debug log để xem trạng thái refresh token
+
     if (accessToken) {
         console.log("Current Access Token:", accessToken); // Debug log to verify token retrieval
         return accessToken;
@@ -13,9 +16,9 @@ export const getAccessToken = async (): Promise<string | null> => {
 
     if (refreshPromise) return refreshPromise;
 
-    refreshPromise = HttpClient.post("/auth/refresh")
+    refreshPromise = refreshToken()
         .then(result => {
-            accessToken = result.data.accessToken;
+            accessToken = result.accessToken;
             console.log("New Access Token:", accessToken); // Debug log to verify token retrieval
             refreshPromise = null; // Mở khóa sau khi xong
             return accessToken;
@@ -25,7 +28,6 @@ export const getAccessToken = async (): Promise<string | null> => {
             const status = error.status;
             if ((status === 401 || status === 403) && !window.location.pathname.includes("/auth/login")) {
                 console.warn("Sentinel: Refresh token đã bị hủy. Đang cưỡng chế đăng xuất...");
-                await sleep(3000);
                 accessToken = null;
                 window.location.replace("/auth/login");
             }
@@ -40,6 +42,6 @@ export const getAccessToken = async (): Promise<string | null> => {
     return refreshPromise;
 };
 
-export const setAccessToken = (token: string) => {
+export const setAccessToken = (token: string | null) => {
     accessToken = token;
 };

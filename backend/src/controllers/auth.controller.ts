@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { validateLoginRequest } from "../utils/functions/auth.functions.js";
 import * as authService from "../services/auth.service.js";
-import { LoginResponseDTO, UserResponseSchema } from "@attack-visualization-system/shared";
+import { IErrorResponse, LoginResponseDTO, UserResponseSchema } from "@attack-visualization-system/shared";
+import ms from "ms";
 import { InvalidCredentialException } from "../exceptions/InvalidCredentialException.js";
+import { UnauthorizedException } from "../exceptions/UnauthorizedException.js";
 
 const ACCESS_TOKEN_EXPIRY = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 7 days
@@ -17,13 +19,19 @@ export const login = async (req: Request, res: Response<LoginResponseDTO>, next:
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    res.cookie("refreshToken", refreshToken, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: isProduction,
       sameSite: "strict",
       path: "/",
-      ...(cleanData.rememberMe && { maxAge: REFRESH_TOKEN_EXPIRY * 1000 })
-    });
+    };
+
+    if (cleanData.rememberMe) {
+      // If user asked to be remembered, persist the cookie (30 days)
+      cookieOptions.maxAge = ms("30d");
+    }
+
+    res.cookie("refreshToken", refreshToken, cookieOptions);
 
     return res.status(200).json({
       message: "Logged in successfully.",
@@ -36,13 +44,13 @@ export const login = async (req: Request, res: Response<LoginResponseDTO>, next:
   }
 };
 
-export const refresh = async (req: Request, res: Response, next: NextFunction) => {
+export const refresh = async (req: Request, res: Response<LoginResponseDTO>, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
     const isProduction = process.env.NODE_ENV === "production";
 
     if (!refreshToken || typeof refreshToken !== "string") {
-      throw new InvalidCredentialException("Missing or invalid refresh token");
+      throw new UnauthorizedException("Missing or invalid refresh token");
     }
 
     const { user, accessToken, refreshToken: newRefreshToken } = await authService.refreshTokens(refreshToken);
@@ -51,7 +59,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       httpOnly: true,
       secure: isProduction,
       sameSite: "strict",
-      path: "/"
+      path: "/",
+      // New refresh tokens issued during rotation use the default 7-day lifetime
+      maxAge: ms("7d")
     });
 
     return res.status(200).json({

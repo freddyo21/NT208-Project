@@ -1,5 +1,5 @@
 import { generateRefreshToken, generateToken, revokeRefreshToken, verifyRefreshToken } from "../utils/jwt-handler";
-import { InvalidCredentialException } from "../exceptions";
+import { Exception, InvalidCredentialException } from "../exceptions";
 import * as userRepository from "../repositories/user.repository";
 import { LoginRequestDTO, LoginRequestSchema, UserResponseSchema, UserSchema } from "@attack-visualization-system/shared";
 import { comparePassword } from "../utils/hash";
@@ -37,7 +37,7 @@ export const login = async (data: LoginRequestDTO) => {
       throw error;
     }
 
-    throw new Error("Authentication service failed");
+    throw new Exception("Authentication service failed", 500);
   }
 };
 

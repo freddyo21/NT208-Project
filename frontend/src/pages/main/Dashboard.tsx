@@ -477,12 +477,15 @@ export default function Dashboard() {
     useEffect(() => {
         const initSentinel = async () => {
             try {
-                await getAccessToken();
+                const accessToken = await getAccessToken();
             } catch (err) {
-                
+                console.error("Failed to initialize Sentinel:", err);
+                alert("Session expired or authentication failed. Please log in again.");
+                logout();
             }
         };
         initSentinel();
+        setInterval(initSentinel, 15 * 60 * 1000); // Refresh access token every 15 minutes
     }, []);
 
     const handleNewEvent = useCallback((ev: AttackEvent) => {
