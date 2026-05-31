@@ -43,14 +43,12 @@ export function WorldMap({ activeTypes, activeSevs, onNewEvent }: WorldMapProps)
         const layer = L.layerGroup().addTo(map);
         layerRef.current = layer;
 
-        const tgtIcon = L.divIcon({ className: "db-tgt-marker", iconSize: [20, 20], iconAnchor: [10, 10] });
+        // Target markers ẩn — chỉ dùng để track tooltip, không hiện trên map
         TARGETS.forEach((t, idx) => {
-            const m = L.marker([t.lat, t.lng], { icon: tgtIcon, zIndexOffset: 500 })
-                .addTo(map)
-                .bindTooltip(`TARGET :: ${t.label}`, {
-                    permanent: false, direction: "right",
-                    className: "db-tgt-tooltip", offset: [14, 0],
-                });
+            const m = L.marker([t.lat, t.lng], {
+                icon: L.divIcon({ className: "", iconSize: [0, 0] }),
+                zIndexOffset: 500, opacity: 0,
+            }).addTo(map);
             tgtMarkersRef.current[idx] = m;
         });
 
@@ -62,31 +60,43 @@ export function WorldMap({ activeTypes, activeSevs, onNewEvent }: WorldMapProps)
             const opacity = SEV_OPACITY[ev.severity];
 
             const dist    = Math.sqrt((tgtPt[0] - src[0]) ** 2 + (tgtPt[1] - src[1]) ** 2);
-            const ctrlLat = (src[0] + tgtPt[0]) / 2 + Math.max(dist * 0.28, 14);
+            const ctrlLat = (src[0] + tgtPt[0]) / 2 + Math.max(dist * 0.32, 16);
             const ctrlLng = (src[1] + tgtPt[1]) / 2;
 
+            // 80 điểm để đường cong mượt hơn
             const pts: [number, number][] = [];
-            for (let i = 0; i <= 40; i++) {
-                const t = i / 40;
+            for (let i = 0; i <= 80; i++) {
+                const t = i / 80;
                 pts.push([
                     (1 - t) ** 2 * src[0] + 2 * (1 - t) * t * ctrlLat + t ** 2 * tgtPt[0],
                     (1 - t) ** 2 * src[1] + 2 * (1 - t) * t * ctrlLng + t ** 2 * tgtPt[1],
                 ]);
             }
 
-            const halo = L.polyline(pts, { color, weight: 7, opacity: 0 }).addTo(layer);
-            setTimeout(() => halo.setStyle({ opacity: opacity * 0.15 }), 60);
+            // Halo mờ phía sau
+            const halo = L.polyline(pts, {
+                color, weight: 5, opacity: 0,
+                smoothFactor: 1.5,
+            } as L.PolylineOptions).addTo(layer);
+            setTimeout(() => halo.setStyle({ opacity: opacity * 0.12 }), 60);
 
-            const arc = L.polyline(pts, { color, weight: 1.6, opacity: 0 }).addTo(layer);
+            // Arc chính — mượt với lineCap round
+            const arc = L.polyline(pts, {
+                color, weight: 1.8, opacity: 0,
+                smoothFactor: 1.5,
+                lineCap: "round",
+                lineJoin: "round",
+            } as L.PolylineOptions).addTo(layer);
             setTimeout(() => {
                 const el = arc.getElement() as SVGPathElement | undefined;
-                if (!el) { arc.setStyle({ opacity: opacity * 0.9, dashArray: "5 8" }); return; }
+                if (!el) { arc.setStyle({ opacity: opacity * 0.9 }); return; }
                 const len = el.getTotalLength();
                 el.style.strokeDasharray  = String(len);
                 el.style.strokeDashoffset = String(len);
+                el.style.strokeLinecap    = "round";
                 arc.setStyle({ opacity });
                 void el.getBoundingClientRect();
-                el.style.transition       = "stroke-dashoffset 1.4s ease-out";
+                el.style.transition       = "stroke-dashoffset 1.6s cubic-bezier(0.4,0,0.2,1)";
                 el.style.strokeDashoffset = "0";
             }, 80);
 
@@ -111,16 +121,31 @@ export function WorldMap({ activeTypes, activeSevs, onNewEvent }: WorldMapProps)
                         setTimeout(() => tgtM.closeTooltip(), 2000);
                     }
 
-                    const flash = L.circleMarker(tgtPt, {
-                        radius: 5, color, fillColor: color, fillOpacity: 0.25, weight: 2, opacity: 1,
+                    // Ring 1 — nhanh
+                    const flash1 = L.circleMarker(tgtPt, {
+                        radius: 4, color, fillColor: color, fillOpacity: 0.3, weight: 1.5, opacity: 1,
                     }).addTo(layer);
-                    let fr = 5, fa = 1;
-                    const expand = setInterval(() => {
-                        fr += 1.8; fa -= 0.07;
-                        if (fa <= 0) { clearInterval(expand); flash.remove(); return; }
-                        flash.setRadius(fr);
-                        flash.setStyle({ opacity: fa, fillOpacity: fa * 0.2 });
-                    }, 25);
+                    let fr1 = 4, fa1 = 1;
+                    const exp1 = setInterval(() => {
+                        fr1 += 2.2; fa1 -= 0.06;
+                        if (fa1 <= 0) { clearInterval(exp1); flash1.remove(); return; }
+                        flash1.setRadius(fr1);
+                        flash1.setStyle({ opacity: fa1, fillOpacity: fa1 * 0.15 });
+                    }, 20);
+
+                    // Ring 2 — delay, chậm hơn
+                    setTimeout(() => {
+                        const flash2 = L.circleMarker(tgtPt, {
+                            radius: 4, color, fillColor: "transparent", fillOpacity: 0, weight: 1, opacity: 0.7,
+                        }).addTo(layer);
+                        let fr2 = 4, fa2 = 0.7;
+                        const exp2 = setInterval(() => {
+                            fr2 += 1.4; fa2 -= 0.04;
+                            if (fa2 <= 0) { clearInterval(exp2); flash2.remove(); return; }
+                            flash2.setRadius(fr2);
+                            flash2.setStyle({ opacity: fa2 });
+                        }, 25);
+                    }, 150);
 
                     setTimeout(() => {
                         const el = arc.getElement() as SVGPathElement | undefined;
