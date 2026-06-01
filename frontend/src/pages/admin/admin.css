@@ -1,0 +1,515 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+/* ─── Root ──────────────────────────────────────────────────────────────────── */
+
+.ad-root {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #060c06;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ff41;
+}
+
+.ad-scanline {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 255, 65, .008) 2px,
+        rgba(0, 255, 65, .008) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* ─── Topbar ────────────────────────────────────────────────────────────────── */
+
+.ad-topbar {
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    background: rgba(0, 0, 0, .72);
+    border-bottom: 1px solid rgba(0, 255, 65, .14);
+    z-index: 10;
+}
+
+.ad-brand {
+    color: #00ff41;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(0, 255, 65, .5);
+}
+
+.ad-sep { color: #004d11; }
+
+.ad-ver {
+    color: #ffcc00;
+    letter-spacing: 2px;
+    font-size: 12px;
+}
+
+.ad-spacer { flex: 1; }
+
+.ad-user {
+    font-size: 12px;
+    color: #006617;
+    letter-spacing: 1px;
+}
+
+.ad-clock {
+    color: #00ff41;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    letter-spacing: 2px;
+    border-left: 1px solid rgba(0, 255, 65, .1);
+    padding-left: 12px;
+}
+
+.ad-logout-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 51, 51, .4);
+    border-radius: 2px;
+    color: #ff3333;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all .15s;
+    margin-left: 8px;
+}
+
+.ad-logout-btn:hover {
+    background: rgba(255, 51, 51, .1);
+    border-color: #ff3333;
+}
+
+/* ─── Body ──────────────────────────────────────────────────────────────────── */
+
+.ad-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* ─── Sidebar ───────────────────────────────────────────────────────────────── */
+
+.ad-sidebar {
+    width: 180px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0, 255, 65, .12);
+    background: rgba(0, 0, 0, .35);
+    padding: 16px 0;
+    gap: 2px;
+}
+
+.ad-sidebar-label {
+    font-size: 9px;
+    color: #004d11;
+    letter-spacing: 2px;
+    padding: 12px 14px 4px;
+}
+
+.ad-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    font-size: 12px;
+    color: #006617;
+    letter-spacing: 2px;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ad-nav-item:hover {
+    color: #00cc33;
+    background: rgba(0, 255, 65, .04);
+    border-left-color: rgba(0, 255, 65, .3);
+}
+
+.ad-nav-item--active {
+    color: #00ff41 !important;
+    background: rgba(0, 255, 65, .07);
+    border-left-color: #00ff41 !important;
+}
+
+/* ─── Main content ──────────────────────────────────────────────────────────── */
+
+.ad-main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 22px 26px;
+}
+
+.ad-main::-webkit-scrollbar { width: 2px; }
+.ad-main::-webkit-scrollbar-thumb { background: rgba(0, 255, 65, .2); }
+
+/* ─── Page header ───────────────────────────────────────────────────────────── */
+
+.ad-page-title {
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: #00ff41;
+    margin-bottom: 4px;
+    text-shadow: 0 0 12px rgba(0, 255, 65, .3);
+}
+
+.ad-page-sub {
+    font-size: 10px;
+    color: #004d11;
+    letter-spacing: 2px;
+    margin-bottom: 22px;
+}
+
+/* ─── Stats grid ────────────────────────────────────────────────────────────── */
+
+.ad-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.ad-stat-card {
+    background: rgba(0, 0, 0, .4);
+    border: 1px solid rgba(0, 255, 65, .12);
+    border-radius: 2px;
+    padding: 14px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .2s;
+}
+
+.ad-stat-card:hover { border-color: rgba(0, 255, 65, .28); }
+
+.ad-stat-num {
+    font-family: 'VT323', monospace;
+    font-size: 52px;
+    line-height: 1;
+    color: #00ff41;
+    text-shadow: 0 0 14px rgba(0, 255, 65, .4);
+}
+
+.ad-stat-num--red    { color: #ff3333; text-shadow: 0 0 14px rgba(255, 51,  51,  .4); }
+.ad-stat-num--orange { color: #ff8800; text-shadow: 0 0 14px rgba(255, 136, 0,   .4); }
+.ad-stat-num--blue   { color: #3399ff; text-shadow: 0 0 14px rgba(51,  153, 255, .4); }
+.ad-stat-num--yellow { color: #ffcc00; text-shadow: 0 0 14px rgba(255, 204, 0,   .4); }
+
+.ad-stat-label {
+    font-size: 10px;
+    color: #004d11;
+    letter-spacing: 2px;
+    margin-top: 6px;
+}
+
+/* ─── Section box ───────────────────────────────────────────────────────────── */
+
+.ad-section {
+    background: rgba(0, 0, 0, .28);
+    border: 1px solid rgba(0, 255, 65, .1);
+    border-radius: 2px;
+    margin-bottom: 16px;
+}
+
+.ad-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0, 255, 65, .08);
+    font-size: 11px;
+    color: #006617;
+    letter-spacing: 2px;
+}
+
+.ad-section-body { padding: 14px; }
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────────── */
+
+.ad-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.ad-search-input {
+    background: rgba(0, 255, 65, .04);
+    border: 1px solid rgba(0, 255, 65, .18);
+    border-radius: 2px;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    outline: none;
+    width: 280px;
+    transition: border-color .2s;
+}
+
+.ad-search-input::placeholder { color: #004d11; }
+.ad-search-input:focus { border-color: rgba(0, 255, 65, .45); }
+
+/* ─── Buttons ───────────────────────────────────────────────────────────────── */
+
+.ad-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 65, .28);
+    border-radius: 2px;
+    color: #00cc33;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all .15s;
+    white-space: nowrap;
+}
+
+.ad-btn:hover {
+    background: rgba(0, 255, 65, .07);
+    border-color: #00ff41;
+    color: #00ff41;
+}
+
+.ad-btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.ad-btn--primary {
+    border-color: rgba(0, 255, 65, .55);
+    color: #00ff41;
+    background: rgba(0, 255, 65, .05);
+}
+
+.ad-btn--primary:hover {
+    background: rgba(0, 255, 65, .12);
+    border-color: #00ff41;
+}
+
+.ad-btn--danger {
+    border-color: rgba(255, 51, 51, .4);
+    color: #ff3333;
+}
+
+.ad-btn--danger:hover {
+    background: rgba(255, 51, 51, .08);
+    border-color: #ff3333;
+}
+
+/* ─── Table ─────────────────────────────────────────────────────────────────── */
+
+.ad-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.ad-table th {
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 10px;
+    color: #004d11;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(0, 255, 65, .1);
+    white-space: nowrap;
+}
+
+.ad-table td {
+    padding: 10px 10px;
+    color: #00cc33;
+    border-bottom: 1px solid rgba(0, 255, 65, .05);
+    vertical-align: middle;
+}
+
+.ad-table tr:hover td { background: rgba(0, 255, 65, .025); }
+
+.ad-table-empty {
+    text-align: center !important;
+    color: #004d11 !important;
+    font-size: 12px !important;
+    letter-spacing: 2px !important;
+    padding: 36px 0 !important;
+}
+
+/* ─── Badges ────────────────────────────────────────────────────────────────── */
+
+.ad-badge {
+    display: inline-block;
+    font-size: 10px;
+    border: 1px solid;
+    border-radius: 2px;
+    padding: 1px 6px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.ad-badge--active   { color: #00ff41; border-color: rgba(0,   255, 65,  .4); background: rgba(0,   255, 65,  .06); }
+.ad-badge--banned   { color: #ff3333; border-color: rgba(255, 51,  51,  .4); background: rgba(255, 51,  51,  .06); }
+.ad-badge--inactive { color: #ff8800; border-color: rgba(255, 136, 0,   .4); background: rgba(255, 136, 0,   .06); }
+.ad-badge--pending  { color: #ffcc00; border-color: rgba(255, 204, 0,   .4); background: rgba(255, 204, 0,   .06); }
+.ad-badge--admin    { color: #ffcc00; border-color: rgba(255, 204, 0,   .4); background: rgba(255, 204, 0,   .06); }
+.ad-badge--operator { color: #3399ff; border-color: rgba(51,  153, 255, .4); background: rgba(51,  153, 255, .06); }
+
+/* ─── Modal ─────────────────────────────────────────────────────────────────── */
+
+.ad-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .82);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-modal {
+    background: #060d06;
+    border: 1px solid rgba(0, 255, 65, .3);
+    border-radius: 2px;
+    width: 420px;
+    box-shadow: 0 0 50px rgba(0, 255, 65, .08);
+}
+
+.ad-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 255, 65, .12);
+    font-size: 12px;
+    color: #006617;
+    letter-spacing: 2px;
+}
+
+.ad-modal-close {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 65, .2);
+    color: rgba(0, 255, 65, .4);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    transition: all .15s;
+}
+
+.ad-modal-close:hover {
+    border-color: rgba(0, 255, 65, .5);
+    color: #00ff41;
+}
+
+.ad-modal-body { padding: 16px 18px; }
+
+.ad-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(0, 255, 65, .08);
+}
+
+/* ─── Form ──────────────────────────────────────────────────────────────────── */
+
+.ad-form-group { margin-bottom: 14px; }
+
+.ad-form-label {
+    display: block;
+    font-size: 10px;
+    color: #004d11;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.ad-form-input {
+    width: 100%;
+    background: rgba(0, 255, 65, .04);
+    border: 1px solid rgba(0, 255, 65, .18);
+    border-radius: 2px;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .2s;
+}
+
+.ad-form-input::placeholder { color: #004d11; }
+.ad-form-input:focus { border-color: rgba(0, 255, 65, .5); }
+
+.ad-form-hint {
+    font-size: 10px;
+    color: #004d11;
+    letter-spacing: 1px;
+    margin-top: 3px;
+}
+
+.ad-form-error {
+    font-size: 11px;
+    color: #ff3333;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 51, 51, .25);
+    border-radius: 2px;
+    background: rgba(255, 51, 51, .05);
+}
+
+/* ─── State boxes ───────────────────────────────────────────────────────────── */
+
+.ad-state-box {
+    text-align: center;
+    padding: 40px 20px;
+    color: #004d11;
+    letter-spacing: 2px;
+    font-size: 12px;
+}
+
+.ad-state-box-title {
+    font-size: 13px;
+    color: #ff3333;
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+}
+
+/* ─── Spinner ───────────────────────────────────────────────────────────────── */
+
+.ad-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(0, 255, 65, .2);
+    border-top-color: #00ff41;
+    border-radius: 50%;
+    animation: ad-spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes ad-spin { to { transform: rotate(360deg); } }
+
+/* ─── Quick action buttons ──────────────────────────────────────────────────── */
+
+.ad-action-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}

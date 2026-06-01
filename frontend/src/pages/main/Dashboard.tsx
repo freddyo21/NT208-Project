@@ -3,6 +3,9 @@ import "./Dashboard.css";
 import { getAccessToken } from "@/utilities/accessToken";
 import { useLogin } from "@/hooks/useLogin";
 import { useClock } from "@/hooks/useClock";
+import { useNavigate } from "react-router-dom";
+import { ERoles } from "@attack-visualization-system/shared";
+import { ProfileModal } from "./components/ProfileModal";
 import type { AttackType, Severity, TimeRange, AttackEvent } from "./dashboard.types";
 import { MOCK_EVENTS, TARGETS } from "./dashboard.constants";
 import { TopBar }    from "./components/TopBar";
@@ -12,7 +15,10 @@ import { EventLog }  from "./components/EventLog";
 
 export default function Dashboard() {
     const time = useClock();
-    const { logout } = useLogin();
+    const navigate = useNavigate();
+    const { logout, currentUser } = useLogin();
+    const isAdmin = currentUser?.role === ERoles.ADMIN;
+    const [showProfile, setShowProfile] = useState(false);
 
     const [query,       setQuery]       = useState("");
     const [range,       setRange]       = useState<TimeRange>("1H");
@@ -72,6 +78,10 @@ export default function Dashboard() {
                 activeTypes={activeTypes} onToggleType={toggleType}
                 activeSevs={activeSevs}   onToggleSev={toggleSev}
                 onLogout={logout}
+                showAdminBtn={isAdmin}
+                onAdmin={() => navigate("/admin/dashboard")}
+                userName={currentUser?.name}
+                onProfile={() => setShowProfile(true)}
             />
             <div className="db-body">
                 <LeftPanel events={filteredEvents} range={range} onRange={setRange} />
@@ -88,6 +98,16 @@ export default function Dashboard() {
 
                 <EventLog events={filteredEvents} />
             </div>
+
+            {showProfile && (
+                <ProfileModal
+                    user={currentUser}
+                    onClose={() => setShowProfile(false)}
+                    onChangePassword={async (_old, _new) => {
+                        // TODO: call change password API
+                    }}
+                />
+            )}
         </div>
     );
 }

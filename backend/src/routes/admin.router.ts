@@ -4,6 +4,7 @@ import { asyncHandler } from "../middlewares/error-handlers";
 
 const adminRouter = Router();
 
+adminRouter.get("/users", asyncHandler(adminController.getUsers));
 adminRouter.post("/user/create", asyncHandler(adminController.createUser));
 
 export { adminRouter };

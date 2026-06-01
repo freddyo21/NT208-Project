@@ -1,7 +1,7 @@
 import type { TopBarProps, AttackType, Severity } from "../dashboard.types";
 import { TYPE_COLORS, SEV_COLORS } from "../dashboard.constants";
 
-export function TopBar({ time, query, onQuery, activeTypes, onToggleType, activeSevs, onToggleSev, onLogout }: TopBarProps) {
+export function TopBar({ time, query, onQuery, activeTypes, onToggleType, activeSevs, onToggleSev, onLogout, showAdminBtn, onAdmin, userName, onProfile }: TopBarProps) {
     const types: AttackType[] = ["DDoS", "SQLi", "Brute", "XSS", "Scan"];
     const sevs:  Severity[]   = ["LOW", "MED", "HIGH", "CRIT"];
 
@@ -54,6 +54,16 @@ export function TopBar({ time, query, onQuery, activeTypes, onToggleType, active
                 ))}
             </div>
 
+            {onProfile && (
+                <button className="db-logout-btn" style={{ borderColor: "rgba(0,255,65,.3)", color: "#00cc33" }} onClick={onProfile}>
+                    {userName ? userName.toUpperCase() : "PROFILE"}
+                </button>
+            )}
+            {showAdminBtn && (
+                <button className="db-logout-btn" style={{ borderColor: "rgba(255,204,0,.4)", color: "#ffcc00" }} onClick={onAdmin}>
+                    ADMIN
+                </button>
+            )}
             <button className="db-logout-btn" onClick={onLogout}>LOGOUT</button>
         </header>
     );

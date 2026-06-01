@@ -41,6 +41,10 @@ export interface TopBarProps {
     activeSevs: Set<Severity>;
     onToggleSev: (s: Severity) => void;
     onLogout: () => void;
+    showAdminBtn?: boolean;
+    onAdmin?: () => void;
+    userName?: string;
+    onProfile?: () => void;
 }
 
 export interface WorldMapProps {
