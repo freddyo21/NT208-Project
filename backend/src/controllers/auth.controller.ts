@@ -4,6 +4,8 @@ import * as authService from "../services/auth.service.js";
 import { IErrorResponse, LoginResponseDTO, UserResponseSchema } from "@attack-visualization-system/shared";
 import ms from "ms";
 import { InvalidCredentialException } from "../exceptions/InvalidCredentialException.js";
+import jwt from "jsonwebtoken";
+import { getKeys } from "../utils/key-generator.js";
 import { UnauthorizedException } from "../exceptions/UnauthorizedException.js";
 
 const ACCESS_TOKEN_EXPIRY = 15 * 60; // 15 minutes

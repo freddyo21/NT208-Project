@@ -31,7 +31,7 @@ export function RoleCheckMiddleware({
 
             const role = getRoleLevelValue(decoded.role) ?? null;
 
-            if (!role) {
+            if (role === null) {
                 setStatus('unauthorized');
                 return;
             }
@@ -53,9 +53,8 @@ export function RoleCheckMiddleware({
 
     if (status === 'forbidden') {
         alert("Forbidden: You do not have permission to access this page.");
-        return null; // Hoặc bạn có thể hiển thị một trang lỗi riêng biệt cho trường hợp này
+        return null;
     }
 
-    // Nếu mọi thứ ok thì render nội dung ngay lập tức
     return <>{children}</>;
 }

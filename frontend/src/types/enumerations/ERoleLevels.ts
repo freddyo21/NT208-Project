@@ -13,6 +13,8 @@ export function getRoleLevelLabel(level: ERoleLevels): string {
 }
 
 export function getRoleLevelValue(label: string): ERoleLevels | null {
-    const entry = Object.entries(roleLevelLabels).find(([_, v]) => v === label);
+    const entry = Object.entries(roleLevelLabels).find(
+        ([_, v]) => v.toLowerCase() === label.toLowerCase()
+    );
     return entry ? (parseInt(entry[0]) as ERoleLevels) : null;
 }

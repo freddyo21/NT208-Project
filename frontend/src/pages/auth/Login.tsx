@@ -1,20 +1,12 @@
 import { useState, useEffect, useRef, useCallback, SubmitEvent } from "react";
 import { useLogin } from "@/hooks/useLogin";
+import { useClock } from "@/hooks/useClock";
 import "./Login.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useTitle } from "@/hooks/useTitle";
 import { getAccessToken } from "@/utilities/accessToken";
 import { useNavigate } from "react-router";
-
-function useClock() {
-    const [time, setTime] = useState(() => new Date().toTimeString().slice(0, 8));
-    useEffect(() => {
-        const id = setInterval(() => setTime(new Date().toTimeString().slice(0, 8)), 1000);
-        return () => clearInterval(id);
-    }, []);
-    return time;
-}
 
 export default function Login() {
     useTitle("Login");
