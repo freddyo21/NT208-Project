@@ -35,16 +35,23 @@ export default function Dashboard() {
             try {
                 await getAccessToken();
             } catch (err) {
-                console.error("Failed to initialize Sentinel:", err);
-                alert("Session expired or authentication failed. Please log in again.");
-                logout();
+                setSocketStatus("error");
+                console.warn("Sentinel socket disabled:", err);
+//                 const accessToken = await getAccessToken();
+//             } catch (err) {
+//                 console.error("Failed to initialize Sentinel:", err);
+//                 alert("Session expired or authentication failed. Please log in again.");
+//                 logout();
             }
         };
+
         initSentinel();
         setInterval(initSentinel, 15 * 60 * 1000);
     }, []);
 
     const handleNewEvent = useCallback((ev: AttackEvent) => {
+        // WorldMap goi callback nay moi khi no ve xong/nhan event moi.
+        // Dua event len dau list de counters va Event Log cap nhat.
         setLiveEvents(prev => [ev, ...prev.slice(0, 49)]);
     }, []);
 
