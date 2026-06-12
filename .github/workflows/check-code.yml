@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: attack-visualization-system-be
+        working-directory: backend
     steps:
       - name: Checkout mã nguồn
         uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
-          cache-dependency-path: attack-visualization-system-be/package-lock.json
+          cache-dependency-path: backend/package-lock.json
 
       - name: Cài đặt dependencies
         run: npm ci
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: attack-visualization-system
+        working-directory: frontend
     steps:
       - name: Checkout mã nguồn
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
-          cache-dependency-path: attack-visualization-system/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Cài đặt dependencies
         run: npm ci

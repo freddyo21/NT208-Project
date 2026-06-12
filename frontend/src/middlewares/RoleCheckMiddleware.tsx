@@ -29,7 +29,7 @@ export function RoleCheckMiddleware({
                 return;
             }
 
-            const role = getRoleLevelValue(decoded.role);
+            const role = getRoleLevelValue(decoded.role) ?? null;
 
             if (!role) {
                 setStatus('unauthorized');

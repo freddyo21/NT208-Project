@@ -22,12 +22,11 @@ export default function Login() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number | null>(null);
 
-    const { login } = useLogin();
+    const { login, loading } = useLogin();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRemember] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPass, setShowPass] = useState(false);
 
@@ -109,7 +108,7 @@ export default function Login() {
         setError(null);
         if (!email.trim()) return setError("Email cannot be empty.");
         if (!password.trim()) return setError("Password cannot be empty.");
-        setLoading(true);
+        // setLoading(true);
 
         try {
             await login(email.trim(), password, rememberMe);
@@ -117,7 +116,7 @@ export default function Login() {
             const e = err as { response?: { data?: { message?: string } }; message?: string };
             setError(e?.response?.data?.message ?? e?.message ?? "Login failed.");
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     }, [email, password, rememberMe, login]);
 

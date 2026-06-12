@@ -4,6 +4,7 @@ import { JwtInvalidException } from "../exceptions";
 import { UserResponse, ITokenPayload } from "@attack-visualization-system/shared";
 import { getKeys } from "./key-generator";
 import ms from "ms";
+import crypto from "crypto";
 
 const logger = new Logger("jwt");
 
@@ -11,19 +12,6 @@ type RefreshTokenRecord = {
     userId: string;
     expiresAt: number;
 };
-
-const refreshTokenStore = new Map<string, RefreshTokenRecord>();
-
-// Cần bỏ sau khi đã có Redis để blacklist refresh token
-const cleanupExpiredRefreshTokens = () => {
-    const now = Date.now();
-    for (const [token, record] of refreshTokenStore.entries()) {
-        if (record.expiresAt <= now) {
-            refreshTokenStore.delete(token);
-        }
-    }
-};
-
 // export const extractToken = (req: Request): string | null => {
 //     const token = req.cookies?.token;
 
@@ -33,13 +21,6 @@ const cleanupExpiredRefreshTokens = () => {
 
 //     return null;
 // };
-
-const generateRefreshTokenString = (): string => {
-    const randomBytes = crypto.getRandomValues(new Uint8Array(32));
-    return Array.from(randomBytes)
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join("");
-};
 
 export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1h") => {
     const { privateKey } = getKeys();
@@ -61,6 +42,22 @@ export const generateToken = (user: UserResponse, expiresIn: ms.StringValue = "1
             expiresIn,
         }
     );
+};
+
+const refreshTokenStore = new Map<string, RefreshTokenRecord>();
+
+// Cần bỏ sau khi đã có Redis để blacklist refresh token
+const cleanupExpiredRefreshTokens = () => {
+    const now = Date.now();
+    for (const [token, record] of refreshTokenStore.entries()) {
+        if (record.expiresAt <= now) {
+            refreshTokenStore.delete(token);
+        }
+    }
+};
+
+const generateRefreshTokenString = (): string => {
+    return crypto.randomBytes(32).toString("hex");
 };
 
 export const generateRefreshToken = (userId: string, expiresIn: ms.StringValue = "7d") => {

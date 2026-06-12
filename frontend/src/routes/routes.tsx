@@ -1,4 +1,7 @@
-import { lazy, Suspense } from "react";
+import {
+    lazy,
+    //  Suspense
+} from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { AdminLayout } from "@/layouts/AdminLayout";
@@ -8,8 +11,8 @@ import { IndexRoutes } from "./IndexRoutes";
 import { AuthRoutes } from "./AuthRoutes";
 import { UserRoutes } from "./UserRoutes";
 import LoginProvider from "@/providers/LoginProvider";
-import { ERoleLevels } from "@/types/enumerations/ERoleLevels";
 import { RoleCheckMiddleware } from "@/middlewares/RoleCheckMiddleware";
+import { ERoleLevels } from "@attack-visualization-system/shared";
 
 const AdminRoutes = lazy(() => import("./AdminRoutes"));
 
@@ -20,7 +23,7 @@ const routesConfig = [
         element: (
             <IndexRoutes />
         )
-    },  
+    },
     {
         path: "admin",
         element: (

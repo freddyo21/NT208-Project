@@ -4,6 +4,7 @@ import { io, type Socket } from "socket.io-client";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
 import { getAccessToken } from "@/utilities/accessToken";
+import { useLogin } from "@/hooks/useLogin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -231,10 +232,20 @@ function WorldMap({ activeTypes, incomingEvent, enableMockAttacks, onNewEvent }:
             zoomControl: false,
             attributionControl: false,
             renderer: L.svg(),
+            dragging: false,
+            scrollWheelZoom: true,
         });
         mapRef.current = map;
 
-        // Tile map cu cua project. Neu mang/OSM cham thi tile co the load tre.
+        // Enable dragging only when zoomed in past the default world view
+        map.on("zoomend", () => {
+            if (map.getZoom() > 2) {
+                map.dragging.enable();
+            } else {
+                map.dragging.disable();
+            }
+        });
+
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
         // Layer rieng de add/remove arc, marker, particle cua attack.
@@ -413,33 +424,35 @@ function WorldMap({ activeTypes, incomingEvent, enableMockAttacks, onNewEvent }:
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 
-interface TopBarProps {
-    time: string;
-    socketStatus: SocketStatus;
-    triggerStatus: TriggerStatus;
-    onTriggerAttack: () => void;
-    showTriggerAttack: boolean;
-    ipFilter: string;
-    onIpChange: (v: string) => void;
-    range: TimeRange;
-    onRange: (r: TimeRange) => void;
-    activeTypes: Set<AttackType>;
-    onToggleType: (t: AttackType) => void;
-}
+// interface TopBarProps {
+//     time: string;
+//     socketStatus: SocketStatus;
+//     triggerStatus: TriggerStatus;
+//     onTriggerAttack: () => void;
+//     showTriggerAttack: boolean;
+//     ipFilter: string;
+//     onIpChange: (v: string) => void;
+//     range: TimeRange;
+//     onRange: (r: TimeRange) => void;
+//     activeTypes: Set<AttackType>;
+//     onToggleType: (t: AttackType) => void;
+//     onLogout: () => void;
+// }
 
-function TopBar({
-    time,
-    socketStatus,
-    triggerStatus,
-    onTriggerAttack,
-    showTriggerAttack,
-    ipFilter,
-    onIpChange,
-    range,
-    onRange,
-    activeTypes,
-    onToggleType
-}: TopBarProps) {
+// function TopBar({
+//     time,
+//     socketStatus,
+//     triggerStatus,
+//     onTriggerAttack,
+//     showTriggerAttack,
+//     ipFilter,
+//     onIpChange,
+//     range,
+//     onRange,
+//     activeTypes,
+//     onToggleType
+// }: TopBarProps) {
+function TopBar({ time, ipFilter, onIpChange, range, onRange, activeTypes, onToggleType, onLogout }: TopBarProps) {
     const types: AttackType[] = ["DDoS", "SQLi", "Brute", "XSS", "Scan"];
     const ranges: TimeRange[] = ["1H", "6H", "24H", "7D"];
     const socketLabel = socketStatus === "connected"
@@ -513,6 +526,8 @@ function TopBar({
                     </button>
                 ))}
             </div>
+
+            <button className="db-logout-btn" onClick={onLogout}>LOGOUT</button>
         </header>
     );
 }
@@ -638,6 +653,7 @@ function EventLog({ events }: { events: AttackEvent[] }) {
 
 export default function Dashboard() {
     const time = useClock();
+    const { logout } = useLogin();
 
     // Cac state UI co san cua Dashboard: filter IP, range, type.
     const [ipFilter, setIpFilter] = useState("");
@@ -727,17 +743,23 @@ export default function Dashboard() {
             } catch (err) {
                 setSocketStatus("error");
                 console.warn("Sentinel socket disabled:", err);
+//                 const accessToken = await getAccessToken();
+//             } catch (err) {
+//                 console.error("Failed to initialize Sentinel:", err);
+//                 alert("Session expired or authentication failed. Please log in again.");
+//                 logout();
             }
         };
 
         initSentinel();
 
-        return () => {
-            // Cleanup khi thoat Dashboard de tranh giu connection cu.
-            socketRef.current?.disconnect();
-            socketRef.current = null;
-            socketTokenRef.current = null;
-        };
+//         return () => {
+//             // Cleanup khi thoat Dashboard de tranh giu connection cu.
+//             socketRef.current?.disconnect();
+//             socketRef.current = null;
+//             socketTokenRef.current = null;
+//         };
+        setInterval(initSentinel, 15 * 60 * 1000); // Refresh access token every 15 minutes
     }, []);
 
     const handleNewEvent = useCallback((ev: AttackEvent) => {
@@ -819,6 +841,7 @@ export default function Dashboard() {
                 onRange={setRange}
                 activeTypes={activeTypes}
                 onToggleType={toggleType}
+                onLogout={logout}
             />
 
             <div className="db-body">

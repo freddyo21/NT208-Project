@@ -32,7 +32,7 @@ export const getKeys = () => {
     fs.writeFileSync(privateKeyPath, privateKey);
     fs.writeFileSync(publicKeyPath, publicKey);
 
-    console.log("🔑 Đã khởi tạo cặp khóa ES256 mới.");
+    console.log("Initialized new ES256 key pair.");
 
     return { privateKey, publicKey };
 };
