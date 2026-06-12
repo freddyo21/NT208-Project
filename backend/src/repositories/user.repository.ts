@@ -83,6 +83,20 @@ export const create = async (data: Required<CreateUserData>) => {
     throw new Exception("Failed to create user", 500, "InternalServerError");
 };
 
+export const findAll = async () => {
+    const query = `
+        SELECT ${USER_SELECT_COLUMNS}, r.name AS role
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        ORDER BY u.created_at DESC
+    `;
+    const result = await pool.query<IUser>(query);
+    return result.rows.map(u => {
+        const { passwordHash, ...userWithoutHash } = u as IUser;
+        return UserResponseSchema.parse(userWithoutHash);
+    });
+};
+
 // export const update = async (id: string, data: Partial<IUser>) => {
 //     const fields: string[] = [];
 //     const values: unknown[] = [];

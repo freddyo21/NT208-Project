@@ -3,6 +3,10 @@ import * as userRepository from "../repositories/user.repository";
 import { hashPassword } from "../utils/hash";
 import { ConflictException } from "../exceptions";
 
+export const getUsers = async () => {
+    return userRepository.findAll();
+};
+
 const SALT_ROUNDS = 13; // Vừa đủ để đảm bảo an toàn mà không quá chậm cho trải nghiệm người dùng. Có thể điều chỉnh nếu cần thiết.
 export const createUser = async (data: CreateUserRequest) => {
     const { name, email, password } = await CreateUserRequestSchema.parseAsync(data);
