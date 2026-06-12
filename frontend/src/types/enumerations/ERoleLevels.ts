@@ -1,8 +1,4 @@
-export enum ERoleLevels {
-    // SUPER_ADMIN = 0,
-    ADMIN = 1,
-    OPERATOR = 10,
-}
+import { ERoleLevels } from "@attack-visualization-system/shared";
 
 export type RoleLevel = ERoleLevels;
 

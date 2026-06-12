@@ -2,12 +2,8 @@ import { getAccessToken } from "@/utilities/accessToken";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { ERoleLevels, ITokenPayload } from "@attack-visualization-system/shared";
-
-const roleLabelMap: Record<string, ERoleLevels> = {
-    "Admin": ERoleLevels.ADMIN,
-    "Operator": ERoleLevels.OPERATOR,
-};
+import { ITokenPayload } from "@attack-visualization-system/shared";
+import { getRoleLevelValue } from "@/types/enumerations/ERoleLevels";
 
 export function RoleCheckMiddleware({
     children,
@@ -33,7 +29,7 @@ export function RoleCheckMiddleware({
                 return;
             }
 
-            const role = roleLabelMap[decoded.role] ?? null;
+            const role = getRoleLevelValue(decoded.role) ?? null;
 
             if (!role) {
                 setStatus('unauthorized');
