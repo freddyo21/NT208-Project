@@ -16,7 +16,8 @@
   "main": "dist/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx src/app.ts",
+    "start": "npm run prepare && tsx src/app.ts",
+    "prepare": "node src/utils/setup-hook.js",
     "dev": "nodemon --watch \"src/**/*.ts\" --exec \"tsx\" src/app.ts",
     "test:socket-attack": "tsx src/scripts/socket-attack-flow/index.ts",
     "build": "npx tsc",
